@@ -1,0 +1,37 @@
+You can build a serial version of libhpmprof.so for use in applications
+that do not use MPI.  The code is the same as in the hpmprof directory, 
+but must be compiled with -DSERIAL_VERSION to remove the dependence on
+MPI.  There is also a simple test code.
+
+To build :
+
+(1) ./configure --with-binutils=/path/to/binutils --with-papi=/path/to/papi
+
+(2) edit makefile and check options and/or paths for binutils and papi
+    set the CPU freq in MHz, for example : -DCPU_MHZ=3000
+
+(3) make   = > should build a serial libhpmprof.so
+
+(4) make test => should build main.x executable file and run it
+
+(5) analyze output : bfdprof main.x hpm_histogram.jobid.rank >profile.txt
+            annotate_objdump main.x hpm_histogram.jobid.rank >asm.txt
+
+Source for the bfdprof utility is in the bfdprof directory.  Please check
+the README file in the hpmprof directory for additional information.
+
+For the serial version of libhpmprof.so, you must add calls to initialize
+the library, start and stop profiling, and write profiler output.  These
+functions are handled automatically in the MPI version of libhpmprof.so.
+
+C/C++ syntax : (the extern "C" qualifier is needed only for C++)
+ extern "C" void HPM_Prof_init(void);
+ extern "C" void HPM_Prof_start(void);
+ extern "C" void HPM_Prof_stop(void);
+ extern "C" void HPM_Prof_write(void);
+
+Fortran syntax :
+ call hpm_prof_init()
+ call hpm_prof_start()
+ call hpm_prof_stop()
+ call hpm_prof_write()

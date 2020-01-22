@@ -1,0 +1,28 @@
+You can use these simple examples to test the MPI wrappers.
+
+Requirements : mpicc and mpif90 from the same MPI distribution used to
+build ../src/libmpitrace.so .
+
+to build, type "make"
+
+to test :
+   on most systems : export LD_PRELOAD=../src/libmpitrace.so    
+   for IBM Spectrum MPI : export OMPI_LD_PRELOAD_POSTPEND=../src/libmpitrace.so
+   mpirun -np 4 ./hi
+   mpirun -np 4 ./hello
+   mpirun -np 4 ./mixed
+   unset LD_PRELOAD   (or unset OMPI_LD_PRELOAD_POSTPEND)
+
+Examine the mpi_profile output files and the sample codes, and ensure that 
+the call counts for each MPI call are correct.  In particular, MPI profile
+outputs for "mpirun -np 4 ./mixed" should look like this :
+
+Data for MPI rank 0 of 4:
+Times from MPI_Init() to MPI_Finalize().
+-----------------------------------------------------------------------
+MPI Routine                        #calls     avg. bytes      time(sec)
+-----------------------------------------------------------------------
+MPI_Comm_rank                           2            0.0          0.000
+MPI_Bcast                               1            4.0          0.000
+-----------------------------------------------------------------
+...

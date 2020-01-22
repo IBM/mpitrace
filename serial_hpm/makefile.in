@@ -1,0 +1,27 @@
+PAPI_INC = -I PAPI_INSTALL_PATH/include
+PAPI_OBJ = PAPI_INSTALL_PATH/lib/libpapi.a
+
+all : libhpm.a libhpm.so check_event_list
+	
+
+libhpm.a : hpm.o
+	ar rv libhpm.a hpm.o $(PAPI_OBJ)
+
+libhpm.so : hpm.o
+	gcc -shared hpm.o $(PAPI_OBJ) -o libhpm.so 
+
+hpm.o : hpm.c counters.h
+	gcc -c -g -O2 -fPIC $(PAPI_INC) hpm.c -o hpm.o
+
+check_event_list : check_event_list.c
+	gcc -g -O2 $(PAPI_INC) check_event_list.c -o check_event_list  $(PAPI_OBJ) -ldl
+
+test : simple.c
+	gcc -g -O2 simple.c -o simple ./libhpm.so
+	./simple
+
+clean :
+	rm -f *.o *.so *.a check_event_list simple hpm_group*
+
+distclean :
+	rm -f *.o *.so *.a check_event_list simple hpm_group* makefile ./counters.h

@@ -1,0 +1,150 @@
+The libhpmprof.so library can be used at run time for interrupt based
+program sampling, where interrupts are triggered by hardware counters via PAPI.
+Typical use would be to trigger an interrupt about every 0.01 sec, and build
+a histogram of hits at various instruction addresses.  The resulting histogram
+is then analyzed with the "bfdprof" utility for statement-level profiling, or
+with the "annotate_objdump" utility for assembly-level profiling.
+
+===============================================================================
+Building / Installing libhpmprof.so
+
+To build libhpmprof.so, you need GNU binutils development files, PAPI, and
+MPI.  The resulting library includes all of the MPI profiling features of
+libmpitrace.so, and adds program sampling.  There are specific requirements
+for how to build PAPI and GNU binutils described in a section below.  Once
+you have the following requirements in place :
+
+   (1) mpicc using  gcc  under the covers
+   (2) PAPI built with options that include -fPIC
+   (3) GNU binutils built with options that include -fPIC
+
+you can build libhpmprof.so with the steps :
+
+   (a) ./configure --with-papi=/path/to/papi  --with-binutils=/path/to/binutils
+   (b) edit the makefile, check paths, optionally set the CPU frequency
+   (c) make
+
+where the PAPI install path must have sub-directories "include,lib", and
+the binutils install path must have sub-directories "include,lib,lib64".
+
+You can copy or move the resulting library to any place you choose.
+
+===============================================================================
+To use the library, just add one or two lines to your job script :
+
+     export LD_PRELOAD=/path/to/libhpmprof.so   (most shared-lib MPI versions)
+ or  export OMPI_LD_PRELOAD_POSTPEND=/path/to/libhpmprof.so  (IBM Spectrum MPI)
+ optionally : export SAVE_LIST=0,101 (comma-separated list of ranks to profile)
+
+and run the job as you normally would.  It is best to unset LD_PRELOAD after the
+run command returns.
+
+If you do not specify a list of ranks to profile with the SAVE_LIST variable,
+the default is to enable interrupts on all ranks.  This can impact performance
+at scale.  By limiting interrupts to one rank or a few ranks, the performance
+impact is typically small. 
+
+When the application calls MPI_Finalize(), profile outputs are written in the 
+rank's working directory to one or more files : hpm_histogram.jobid.rank.
+Once you have a histogram file, analyze it with :
+
+   bfdprof your.exe hpm_histogram.jobid.rank >source_profile.txt
+
+   annotate_objdump your.exe hpm_histogram.jobid.rank >asm_profile.txt
+
+Your executable file should be built with options that include "-g" so the
+tools can translate from instruction address to source file and line number.
+Source code for the bfdprof and annotate_objdump utilities is provided in the
+bfdprof directory.
+
+If your system uses static executables and a static MPI library, you will
+need to build the static library libhpmprof.a and link that explicitly when
+you build your executable file.  This will normally also require linking
+with your GNU binutils libraries libbfd.a and libiberty.a, and possibly
+additional libraries, depending on your system.  Using shared libraries is
+a lot more convenient because the instrumentation can be added at runtime
+via one line in your job script, with no changes to the way you build your
+executable file.  The command "make static" should build libhpmprof.a .
+
+===============================================================================
+Building GNU binutils
+
+  (1) get the latest GNU binutils from ftp.gnu.org
+  (2) export CC=gcc;  export CFLAGS="-g -O2 -fPIC"
+      export CXX=g++; export CXXFLAGS="-g -O2 -fPIC"
+  (3) configure --prefix=/path/to/binutils
+  (4) make
+  (5) edit libiberty/Makefile; set target_header_dir = ${prefix}/include
+  (6) make install
+  (7) cp bfd/config.h /path/to/binutils/include
+
+Note that steps (5) and (7) are required to get all components in place.
+
+===============================================================================
+Building PAPI
+
+  (1) get a recent PAPI from http://icl.utk.edu/papi/software/
+  (2) export CC=gcc;       export CFLAGS="-g -O2 -fPIC"
+      export F77=gfortran; export FFLAGS="-g -O2 -fPIC"
+  (3) configure --prefix=/path/to/papi  (optionally specify --with-CPU=<cpu>)
+  (4) make; make install
+  (5) check basic functionality : /path/to/papi/bin/papi_native_avail
+
+===============================================================================
+Additional features and comments
+
+The code in hpmprof.c is set to use CPU cycles to generate interrupts.  Once
+the count of cycles in the run queue reaches a threshold value, an interrupt
+is triggered, and the interrupt handler registers a hit at the tagged address.
+The default threshold value is chosen to generate an interrupt at intervals
+of roughly 0.01 sec.  However, many systems now have runtime variable CPU
+clock frequencies, and so cycles in the run queue are not always directly
+related to time.  On some Intel systems, it may be preferable to use cycles
+at a reference frequency, for example perf::ref-cycles, instead of perf::cycles
+to trigger interrupts.  The hpmprof code lets the user specify any valid
+hardware counter event to trigger interrupts, and you can also control the
+interrupt rate by setting the threshold value that is used to trigger the
+interrupts.  This control is via environment variables, for example :
+
+  export HPM_PROFILE_EVENT=perf::ref-cycles
+  export HPM_PROFILE_THRESHOLD=27000000
+
+The choices above would be reasonable for an Intel system with a nominal clock
+frequency of 2.7 GHz. Although one can sample using any valid counter, it is
+normally most useful to focus on a counter that is closely related to time, and
+so "cycles" and "ref-cycles" are reasonable choices.
+
+The normal profiling method for libhpmprof.so is to build a histogram of hits
+at instruction addresses in the program-text section of the executable file.
+In this case the tool provides a summary of time spent in various shared
+libraries.  The time in shared libraries can be very important.  You can
+optionally request program sampling of one specific shared library.  In this
+case, it is the program-text section of the shared library that is relevant,
+not the program-text section of your executable file.  The selected shared
+library must be specified by an environment variable :
+
+  PROFILE_SHAREDLIB=/path/to/your.so
+
+Note that this shared-library profiling method is best suited for user defined
+shared libraries, not shared libraries provided by the system.  
+
+The analysis tool, bfdprof, needs debug information (-g) to associate 
+instruction addresses with source-file and line number.  In contrast, the 
+assembly-level profile data obtained with the "annotate_objdump" tool directly 
+reflects the histogram of hits per instruction address collected at run time, 
+regardless of the presence or lack of debug information.
+
+Some MPI implementations are not interrupt-safe and as a result your job may
+crash when interrupts are enabled.  Sometimes the problem can be identified
+and one can work around the issue.  For example, a 2019 build of IBM Spectrum
+MPI included optimized collective routines that are not interrupt-safe.  One
+could by-pass those via a runtime option :
+
+  mpirun -mca coll ^ibm  -np 32768  your.exe
+
+The options "-mca coll ^ibm" tell the MPI library to not use the IBM routines
+for collective communication.  The MPI performance may be impacted, but these
+options may make it possible to collect useful program-sampling data without
+crashing.  Similarly, restricting interrupts to one or a few MPI ranks by 
+setting the SAVE_LIST env variable helps reduce the risk of crashes caused by
+lack of interrupt safety in underlying software layers.

@@ -1,0 +1,11 @@
+CC = g++
+CFLAGS = -O2 -mcpu=power9 -Wall -I${HOME}/freeglut-3.0.0/include
+
+LIBS = -L/usr/lib/powerpc64le-linux-gnu -lglui -lglut -lGL -lGLU -L${HOME}/freeglut-3.0.0/lib/powerpc64le-linux-gnu \
+      -Wl,-rpath=/usr/lib/powerpc64le-linux-gnu/mesa
+
+traceview : traceview.cpp 
+	$(CC) $(CFLAGS) traceview.cpp $(LIBS) -o traceview
+
+clean :
+	rm -f traceview

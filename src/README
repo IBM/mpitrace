@@ -1,0 +1,311 @@
+This directory has code for a MPI wrapper library : libmpitrace.so .
+
+To build, type ./configure   ...   and if that succeeds, type make.
+
+If your system has hardware counters supported by PAPI, you can build
+an additional library, libmpihpm.so, that includes all of the MPI
+profiling features described below, plus adds a facility to collect
+and report cumulative counts for hardware counter events.  Please see
+the description in HardwareCounters.txt.
+
+The configure script checks that you have mpicc in your PATH, and checks
+that the underlying C compiler is gcc.  If both checks pass, the script
+copies "makefile.in" to "makefile", and then "make" should build the
+wrapper library.  By using your system's gcc compiler, the resulting
+libmpitrace.so should be compatible with all other compilers on your
+system, and it should work with the version of MPI associated with mpicc.
+
+To use libmpitrace.so :
+
+  (1) on most systems, add one line to your job script :  
+         export LD_PRELOAD=/path/to/libmpitrace.so
+
+      for IBM Spectrum MPI : 
+         export OMPI_LD_PRELOAD_POSTPEND=/path/to/libmpitrace.so
+
+  (2) run your code as normal (example : mpirun -np 1024 your.exe ... )
+
+  (3) unset LD_PRELOAD (or unset OMPI_LD_PRELOAD_POSTPEND)
+
+The wrapper library intercepts MPI calls and prints a summary in text
+files : mpi_profile.jobid.rank.  Optional features are controlled via
+env variables.  A list of env variables is included in the text file 
+env_variables.txt, and the basic features are described below.  It is
+recommended to test your build of libmpitrace.so using the example 
+provided in the "mpi_examples" directory, or with your own codes. 
+Extra care may be required for codes that call MPI from a mix of
+languages that include Fortran and C or C++ because some implementations
+of MPI handle profiling interfaces for Fortran and C in ways that could
+result in double-counting or missed function calls.  There are always 
+solutions for such cases, but these solutions are not included in the
+present repository.
+
+Most Linux systems use shared-libraries for MPI.  If your system uses
+statically linked executables, you would need to build a static library,
+libmpitrace.a, and link with that when you build your executable file.
+For that path, type "make static" to build a static libmpitrace.a .
+
+On some supercomputing systems, administrators may automatically preload
+a different library that steals MPI entry points ... the Darshan library
+is a typical example.  In such cases the user must unload the Darshan
+module, or take the equivalent action to ensure that there are no
+conflicting uses of LD_PRELOAD.  Some MPI implementations provide other
+methods, such as a special option for mpirun, to specify a profiling
+library at run time.  Using such options may be preferable or required, 
+instead of using LD_PRELOAD.  
+
+
+Note about thread safety : most applications make calls to MPI routines
+from the master thread.  For efficiency, this MPI wrapper library is not
+thread-safe unless you specifically request it.  The library can be made
+to be thread safe by turning on -DUSE_LOCKS as a compiler option in the
+makefile, which can be done either manually or via a configure option,
+
+./configure --with-locks.  
+
+Adding mutex lock/unlock calls around updates to static data adds overhead, 
+and the resulting profile data will be cumulative over all threads that 
+make MPI calls.  The resulting library is thread safe, but interpretation 
+will be nearly impossible when multiple threads make concurrent calls to 
+MPI, because the total time accumulated in MPI is bounded by the total 
+number of threads times the elapsed time, not by the elapsed time for the 
+job.  There is no facility for tracking MPI data on a per-thread basis.
+
+
+There is an option to enable interrupt-based program-sampling with the 
+profil() routine.  This program-sampling method uses timer interrupts 
+triggered by the profil() routine that come every 10 msec of user cpu 
+time.  The output from sampling is a binary file that contains a histogram 
+indicating how many hits occurred at each instruction address in the 
+program text section of the executable file.  Program-sampling with the 
+profil() routine has several limitations, and it is recommended to use 
+hardware counters for program-sampling if possible ... see the hpmprof 
+directory for more information.  You can request program-sampling via the 
+profil() routine by enabling configure options :
+
+./configure --with-vprof  --with-binutils=/path/to/binutils
+
+The GNU binutils package needs to be built with the -fPIC compiler option,
+and there are some other steps required ... please see the section below
+on building GNU binutils.
+
+
+The sections below describe optional controls for MPI analysis using
+libmpitrace.so.  These controls also apply to the library version that
+includes collection of hardware counters, libmpihpm.so.
+
+========================================================================
+Controlling the profiled code region :
+
+By default, libmpitrace.so will start tracking MPI calls when your
+application calls MPI_Init() and stops with MPI_Finalize().  You can
+optionally add calls to MPI_Pcontrol() to limit data collection to a
+specific code block :
+
+C / C++ :  MPI_Pcontrol(1); code block; MPI_Pcontrol(0);
+Fortran : call mpi_pcontrol(1); code block; call mpi_pcontrol(0)
+
+The MPI_Pcontrol() routine is part of the MPI specification, and it is 
+there to provide control for profiling tools like libmpitrace.so.  These
+functions have no effect in the normal MPI library, so it is safe to
+add them to your application code as desired.
+
+========================================================================
+Output control :
+
+The normal outputs for libmpitrace.so are just a few text files :
+
+mpi_profile.jobid.rank  
+
+for rank 0 and the ranks with the min, max, and median times in MPI.
+This limits the number of output files and provides details for several
+ranks of interest.  You can control the ranks that produce output :
+
+export SAVE_LIST=0,10,20,30    (explicit list of ranks to save)
+export SAVE_ALL_TASKS=yes      (saves output from each rank)
+
+If you use a batch system and have multiple MPI job-steps within the
+context of the same batch job, the jobid is not sufficient to uniquely
+label the MPI profile outputs.  You can optionally add a timestamp to
+the name of the output files :
+
+export ADD_TIMESTAMP=yes
+
+The output files are normally written to the working directory for the
+MPI ranks that write output.  You can optionally specify an output
+directory :
+
+export TRACE_DIR=/path/to/your/mpi_profile/output
+
+========================================================================
+Communication patterns :
+
+You can optionally track point-to-point messages that have specific
+destination ranks, to get an idea of the overall communication pattern.
+
+export TRACE_SEND_PATTERN=yes
+
+This will produce pattern files for the ranks that output data, plus a
+sparse matrix that lists the number of bytes and number of messages sent
+from each rank to all of it's destination ranks.  There is a utility,
+readsparse, to read the sparse matrix data and write out text ... see 
+the utility directory.  Tracking communication patterns will add some
+overhead to the MPI wrappers.
+
+========================================================================
+Associating MPI calls with source file / line-number :
+
+You can optionally associate MPI calls with their call site in the
+application by setting an environment variable :
+
+export PROFILE_BY_CALL_SITE=yes
+
+For this to be effective, you need -g as a compile option when you
+build your code.  When this option is enabled, the MPI wrapper library
+saves the instruction address for every MPI call, and prints that
+information in the mpi_profile outputs.  You will need to use the GNU
+addr2line utility to translate from instruction address to source file
+and line number.  You can do this one address at a time, or all in one
+shot :
+
+grep "site address" mpi_profile.jobid.rank | awk '{print $10}' | addr2line -e your.exe
+
+Sometimes you might want to track the address one or more levels up the
+call stack, instead of the specific call site for the MPI function.  You
+can do that with an environment variable :
+
+export TRACEBACK_LEVEL=1  (or 2, or 3, etc.)
+
+========================================================================
+Adding barriers to shed light on load imbalance :
+
+It is very common that much of the time spent in MPI is time waiting
+on other processes to finish their work.  This effect frequently 
+shows up in collective MPI routines.  You can get a handle on the
+synchronization time by adding a barrier before the collective call.
+You can do that with environment variables :
+
+export COLLECTIVE_BARRIER=yes (adds a barrier before all collective calls)
+export COLLECTIVE_BARRIER=MPI_Allreduce  (adds a barrier before allreduce)
+
+More generally, you can explicitly list the collective routines where you
+want to insert barriers; MPI_Allreduce above is just one example.
+
+========================================================================
+Profiling by communicator size :
+
+With collective operations, you might want to separate out the time 
+spent in different communicators.  For technical reasons, it is simpler
+to sort by the size of the communicator.  You can get that information
+by setting an environment variable :
+
+export PROFILE_BY_COMMUNICATOR=yes
+
+The output will then contain sections for each distinct communicator
+size, as well as a section that is inclusive of all communicators.
+
+========================================================================
+Time-window profiling :
+
+The MPI wrapper library normally writes output when the application
+calls MPI_Finalize.  Sometimes it is convenient to have a method
+that can collect data in a predefined time window, and write it out
+as soon as the time-window closes.  You can do that by setting a few
+environment variables :
+
+export SAVE_LIST=0,10,20,30   (arbitrary list of ranks)
+export PROFILE_BEGIN_TIME=100 (start collecting data 100 sec after MPI_Init)
+export PROFILE_END_TIME=150   (stop collecting data 150 sec after MPI_Init)
+
+This method works by checking elapsed time every time a MPI function
+gets called.  As a result, this approach works best when MPI calls
+occur fairly frequently on the ranks of interest.  With this method
+you must explicitly list the ranks that will produce output, via the
+SAVE_LIST environment variable.
+
+========================================================================
+Event tracing :
+
+The libmpitrace.so library includes support for collecting a timestamped
+history of all MPI calls for graphical display.  There is a visualization
+tool required to display the event records, using the traditional method
+where the x-axis is time and the y-axis is MPI rank ... see the traceview
+directory.  This tool is designed to provide simple and efficient 
+visualization ... it is not a comprehensive trace analysis tool.  The trace 
+files produced by libmpitrace.so are binary files with a concatenation of 
+records, 48 bytes per record.  For successful visualization, one should
+limit the total volume of trace data to less than a few GiB.  A relatively 
+small buffer is reserved in memory to hold trace data for each MPI rank : 
+enough for 10^5 MPI calls per rank, which would total to ~1.1 GiB for 256
+MPI ranks.  You can optionally set the trace buffer size, but it is often
+best to limit trace collection in time and by MPI rank to keep the volume
+of data at a manageable level.  The current default setting is to write out
+trace data for ranks 0-255, or fewer if your job has less than 256 MPI ranks.
+You can set env variables to request trace collection from a contiguous 
+block of ranks :
+
+export TRACE_MIN_RANK=min   (default is 0)
+export TRACE_MAX_RANK=max   (default is 255)
+
+or you can request trace collection from all MPI ranks :
+
+export TRACE_ALL_TASKS=yes
+
+To collect trace data for a specific block of code, you can add calls to
+MPI_Pcontrol() with specific arguments, 101 to start, 100 to stop :
+
+C / C++ : MPI_Pcontrol(101); ... code block ...; MPI_Pcontrol(100);
+Fortran : call mpi_pcontrol(101); code block; call mpi_pcontrol(100)
+
+If you have already instrumented your code with MPI_Pcontrol(1/0) to specify
+a region for cumulative MPI profile data, you can optionally enable event
+tracing for the same region by setting : 
+
+export ENABLE_TRACING=yes    (default is no)
+
+You can optionally enable tracing in a specified time window.  For example,
+to start tracing 100 seconds after MPI_Init, and stop 120 seconds after
+MPI_Init, you can set these variables :
+
+export TRACE_BEGIN_TIME=100   (integer number of seconds after MPI_Init)
+export TRACE_END_TIME=120     
+
+This time-window method can be very convenient because it does not require
+code modification.
+
+To control the trace buffer size :
+
+export TRACE_BUFFER_SIZE=value_in_bytes  (default is 4800000 bytes)
+
+Some applications have huge numbers of MPI calls for certain routines.
+For example, MPI_Iprobe() may be called in a loop, waiting for messages
+to arrive.  That kind of scenario would quickly overflow any reasonable
+trace buffer, so there is a mechanism to disable tracing for a specified
+list of MPI routines.  For example : 
+
+export TRACE_DISABLE_LIST=MPI_Iprobe,MPI_Comm_rank (comma separated list)
+
+The trace data is written to a single file when the application calls
+MPI_Finalize().  This file is usually named jobid.trc.  The same output
+controls for MPI profile data apply to the trace file : you can optionally
+add a timestamp to the file name, and you can specify an output directory
+by setting env variable TRACE_DIR.  For trace visualization, it is best to
+transfer the trace file to your workstation or laptop, to ensure fast local
+rendering.
+
+For more information on the trace visualization tool, look in the
+traceview directory.
+
+===============================================================================
+Building GNU binutils
+
+  (1) get the latest GNU binutils from ftp.gnu.org
+  (2) export CC=gcc;  export CFLAGS="-g -O2 -fPIC"
+      export CXX=g++; export CXXFLAGS="-g -O2 -fPIC"
+  (3) configure --prefix=/path/to/binutils
+  (4) make
+  (5) edit libiberty/Makefile; set target_header_dir = ${prefix}/include
+  (6) make install
+  (7) cp bfd/config.h /path/to/binutils/include
+
+Note that steps (5) and (7) are required to get all components in place.

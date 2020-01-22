@@ -1,0 +1,98 @@
+#-------------------------------------------------------------
+# to build with vprof support, un-comment the -DVPROF option
+#-------------------------------------------------------------
+#VPROF = -DVPROF
+
+ifeq ($(VPROF),-DVPROF)
+  VPROF_STATIC_OBJ  = vprof_static.o
+  VPROF_DYNAMIC_OBJ = vprof_bfd.o
+  BFD_LIB   = -L BINUTILS_INSTALL_PATH/lib -lbfd  -L BINUTILS_INSTALL_PATH/lib64 -liberty -lz  
+else
+  VPROF_OBJ = 
+  BFD_LIB   = 
+endif
+
+#-------------------------------------------------------------
+# optionally add an underscore to all Fortran entry points
+#-------------------------------------------------------------
+ FNAME = 
+#FNAME = -DADD_UNDERSCORE
+
+
+#------------------------------------------------------------------
+# optionally turn on mutex lock/unlock to make a threadsafe library
+#------------------------------------------------------------------
+#THREADSAFE = -DUSE_LOCKS
+
+#-------------------------------------------------------------
+# optionally use PAPI for hardware-counter interfaces
+#-------------------------------------------------------------
+PAPI_INC = -I PAPI_INSTALL_PATH/include
+PAPI_OBJ =  PAPI_INSTALL_PATH/lib/libpapi.a
+
+#--------------------------------------------------------------------------------------
+# to build a library for Intel uncore counters, un-comment the -DUNCORE_COUNTERS option
+#--------------------------------------------------------------------------------------
+#UNCORE = -DUNCORE_COUNTERS
+
+#-------------------------------------------------------------
+# normally use gcc to build the wrapper libraries;
+# this is simplest if mpicc calls gcc for compilation
+# add -DHAS_INIT_THREAD if your MPI implementation supports MPI_Init_thread()
+#-------------------------------------------------------------
+ CC = mpicc
+ CFLAGS = -g -O -fPIC $(VPROF) -I. $(MPI_INC) $(FNAME) -DHAS_INIT_THREAD $(THREADSAFE)
+
+#------------------------------------------
+# targets
+#------------------------------------------
+default: shared #static 
+
+static :    libmpitrace.a libmpihpm.a 
+
+shared :  libmpitrace.so libmpihpm.so  
+
+clean :
+	rm -f *.a *.o *.so *.lst 
+
+distclean :
+	rm -f *.a *.o *.so *.lst makefile ./counters.h
+
+#------------------------------------------------------------------
+# rules for the wrapper libraries - add support for vprof profiling
+#------------------------------------------------------------------
+libmpitrace.a : mpitrace.o mpitrace_sortx.o      $(VPROF_STATIC_OBJ)
+	ar crv $@ mpitrace.o mpitrace_sortx.o    $(VPROF_STATIC_OBJ)
+
+libmpihpm.a : mpihpm.o mpitrace_sortx.o hpm.o        $(VPROF_STATIC_OBJ)
+	ar crv $@ mpihpm.o mpitrace_sortx.o hpm.o    $(VPROF_STATIC_OBJ) $(PAPI_OBJ)
+
+libmpitrace.so : mpitrace.o mpitrace_sortx.o                             $(VPROF_DYNAMIC_OBJ)
+	$(CC) -o libmpitrace.so   -shared mpitrace.o   mpitrace_sortx.o  $(VPROF_DYNAMIC_OBJ) $(BFD_LIB) 
+
+libmpihpm.so : mpihpm.o mpitrace_sortx.o hpm.o                                         $(VPROF_DYNAMIC_OBJ)
+	$(CC) -o libmpihpm.so   -shared mpihpm.o   mpitrace_sortx.o hpm.o  $(PAPI_OBJ) $(VPROF_DYNAMIC_OBJ) $(BFD_LIB) 
+
+#------------------------------------------
+# rules for .o files
+#------------------------------------------
+mpitrace.o : mpitrace.c mpitrace_common.c  init_part1.c init_part2.c \
+              fortran_wrappers.c mpitrace.h
+	$(CC) -c $(CFLAGS) mpitrace.c -o $@
+
+mpihpm.o : mpitrace.c mpitrace_common.c  init_part1.c init_part2.c \
+              fortran_wrappers.c mpitrace.h
+	$(CC) -c -DHPM $(CFLAGS) mpitrace.c -o $@
+
+mpitrace_sortx.o : mpitrace_sortx.c
+	$(CC) -c $(CFLAGS) mpitrace_sortx.c -o $@
+
+hpm.o : hpm.c counters.h
+	$(CC) -c $(CFLAGS) $(UNCORE) -DUSE_MPI $(PAPI_INC) hpm.c -o $@
+
+vprof_static.o : ../vprof/vprof_static.c
+	$(CC) -c $(CFLAGS) -I BINUTILS_INSTALL_PATH/include ../vprof/vprof_static.c -o $@
+	
+vprof_bfd.o : ../vprof/vprof_bfd.c
+	$(CC) -c $(CFLAGS) -I BINUTILS_INSTALL_PATH/include ../vprof/vprof_bfd.c -o $@
+

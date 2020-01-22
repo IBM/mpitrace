@@ -1,0 +1,48 @@
+This directory has a simplified set of routines to control profiling via
+the profil() routine, and write output in vmon.out format, for use with 
+bfdprof.  Support for program sampling vial the profil() routine can be
+enabled in libmpitrace.so via configure options ... see the README file
+in the src directory.  The user can optionally add explicit calls to the
+code to mark a code region for pc sampling.  The interface is :
+
+C/C++  syntax : mpitrace_vprof_start(); ...  mpitrace_vprof_stop();
+  type signature : extern "C" void mpitrace_vprof_start(void);
+                   extern "C" void mpitrace_vprof_stop(void);
+  where the extern "C" qualifier is needed for C++ only.
+ 
+Fortran syntax :
+   call mpitrace_vprof_start() ...  call mpitrace_vprof_stop()
+
+There is a call to mpitrace_vprof_write() inside the wrapper for MPI_Finalize()
+... so you do not need to call that explicitly.
+
+If you add calls as indicated above, you would have to link your code
+with libmpitrace.so, which is often not convenient.  You can get the
+equivalent behavior by adding calls to MPI_Pcontrol() with specific
+arguments :
+
+      MPI_Pcontrol(11);  // start pc sampling with profil()
+      ...
+      MPI_Pcontrol(10);  // stop pc sampling
+
+The MPI_Pcontrol function is included in all MPI implementations, and they
+have no effect unless a profiling tool such as libmpitrace.so has stolen
+the entry points.  So, with this approach you can get control of the code
+region to sample, without explicitly linking with libmpitrace.so when you
+build your executable.  For Fortran, the syntax is :
+
+     call mpi_pcontrol(11)  ! start pc sampling with profil()
+     ...
+     call mpi_pcontrol(10)  ! stop pc sampling
+
+Note that there should be just one call to start profiling and one
+call to stop profiling.  This restriction could probably be removed,
+but would require some changes to the current code.
+
+With the MPI wrappers, you will by default get vmon.out files for the
+ranks with the min, max, and median times in MPI, and for rank 0.  It
+is recommended to set the SAVE_LIST variable to one or a few MPI ranks.
+Doing that will enable interrupts on only the ranks there were listed.
+For example " export SAVE_LIST=0,11  will enable interrupts on ranks 0
+and 11.
+

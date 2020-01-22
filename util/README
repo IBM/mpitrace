@@ -1,0 +1,17 @@
+The "readsparse" utility is designed to read the binary sparse-matrix
+files that contain information on the communication patterns that
+are recorded with libmpitrace.so when the user specifies :
+
+  export TRACE_SEND_PATTERN=yes
+  export LD_PRELOAD=/path/to/libmpitrace.so
+  mpirun -np 1024 your.exe
+
+To build the readsparse utility type make.
+
+To use the utility : readsparse send_bytes.sparse.jobid .  This will
+print the contents to standard out, so it is best to redirect output
+to a file.  The output lists for each rank the number of messages
+and bytes sent to every connected destination rank.  The binary input
+file contains information from only those MPI calls that have a 
+specific destination rank as a call argument, i.e. some form of send
+operation.  Collective MPI operations and receives are not included.

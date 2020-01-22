@@ -1,0 +1,48 @@
+This directory has a version of the MPI wrappers that support profiling
+named disjoint code sections.  This requires instrumenting the code :
+
+C/C++ : (use the extern "C" qualifier for declarations in C++ codes)
+   extern "C" void mpitrace_Context_start(const char *);
+   extern "C" void mpitrace_Context_stop(const char *);
+
+   mpitrace_Context_start("phase1");
+   ...
+   mpitrace_Context_stop("phase1");
+   etc.
+
+Fortran :
+   call mpitrace_context_start('phase1')
+   ...
+   call mpitrace_context_stop('phase1')
+   etc.
+
+The resulting mpi_profile files will contain MPI timing data specific to
+each named code section, in addition to an overall inclusive summary.
+
+The optional features that are included with this alternate version of
+libmpitrace.so are the same as those described the the README file located
+in the src directory.  Please refer to that README for additional 
+information.
+
+===============================================================================
+Build Instructions
+
+Ensure that you have mpicc in your PATH and that the underlying compiler 
+is gcc.  This may require setting environment variables such as OMPI_CC=gcc
+or MPICH_CC=gcc.
+
+(1) ./configure
+(2) make
+
+This should build a version of libmpitrace.so that supports separate reports
+of MPI timing data in specific code blocks marked by the user.
+
+===============================================================================
+Normal use 
+
+Just add one line to your job script to pre-load libmpitrace.so.
+
+  (1) export LD_PRELOAD=/path/to/libmpitrace.so
+  (2) mpirun -np 1024 your.exe
+
+For more information please refer to the README in the src directory.

@@ -1,0 +1,91 @@
+#!/bin/bash 
+set -e
+#parse command arguments
+config_args=$(/usr/bin/getopt -n $0 -l "help,with-binutils:" -o "hb:" -- "$@")
+eval set -- "$config_args"
+
+binutils_flag=0
+
+while true 
+do
+  case "$1" in
+    -h|--help)
+     echo "configure options :"
+     echo "--help  (prints this help message)"
+     echo "--with-binutils=/path/to/binutils  (required and must have sub-directories : lib,lib64,include)"
+     exit;;
+  
+    -b|--with-binutils)
+     binutils_flag=1
+     binutils_path="$2"
+     echo using binutils_path=$binutils_path
+     shift 2;;
+
+    --)
+     shift
+     break;;
+  esac
+done
+
+if [ $binutils_flag == 0 ]; then
+  echo GNU binutils is required : ./configure --with-binutils=/path/to/binutils
+  exit
+fi
+
+cp makefile.in makefile
+
+if [ $binutils_flag == 1 ]; then
+# check for gnu binutils bfd components
+  if [[ ! -z $binutils_path ]]; then
+    echo -n testing for libbdf.a...
+    if [ -f $binutils_path/lib/libbfd.a ]; then
+      echo found
+    else
+      echo libbfd.a not found ... check your binutils path ... exiting
+      exit
+    fi
+
+    echo -n testing for libiberty.a...
+    if [ -f $binutils_path/lib64/libiberty.a ]; then
+      echo found
+    else
+      echo libiberty.a not found ... check your binutils path ... exiting
+      exit
+    fi
+
+    echo -n testing for bfd.h...
+    if [ -f $binutils_path/include/bfd.h ]; then
+      echo found
+    else
+      echo bfd.h not found ... check your binutils path ... exiting
+      exit
+    fi
+
+    echo -n testing for binutils config.h...
+    if [ -f $binutils_path/include/config.h ]; then
+      echo found
+    else
+      echo binutils config.h not found ... check your binutils path ... exiting
+      exit
+    fi
+
+    x_binutils_path="$(echo $binutils_path | sed 's/\//\\\//g')"
+
+    sed -i "s/#VPROF = -DVPROF/ VPROF = -DVPROF/g" makefile
+    sed -i "s/BINUTILS_INSTALL_PATH/$x_binutils_path/g" makefile
+
+  else
+
+    echo "error  : the configure option --with-binutils  is required for vprof support"
+    echo "example : ./configure --with-vprof --with-binutils=/path/to/binutils"
+    exit
+
+  fi
+
+fi
+
+echo ""
+echo "edit makefile and ensure that the path for GNU binutils is set correctly"
+echo "to build bfdprof and annotate_objdump, type : make"
+echo ""
+

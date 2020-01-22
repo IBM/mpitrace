@@ -1,0 +1,20 @@
+#------------------------------------------------------------------------------
+# set the path to your gnu binutils install
+#------------------------------------------------------------------------------
+  INC = -I BINUTILS_INSTALL_PATH/include
+  LIB = -L BINUTILS_INSTALL_PATH/lib -lbfd -L BINUTILS_INSTALL_PATH/lib64 -liberty  -lz -ldl 
+# -----------------------------------------------------------------------------
+
+all: bfdprof annotate_objdump
+
+bfdprof : bfdprof.c 
+	gcc $(INC) -g -O3 bfdprof.c -o bfdprof $(LIB)
+
+annotate_objdump : annotate_objdump.c 
+	gcc $(INC) -g -O3 annotate_objdump.c -o annotate_objdump $(LIB)
+
+clean :
+	rm -f *.o bfdprof annotate_objdump
+
+distclean :
+	rm -f *.o bfdprof annotate_objdump makefile

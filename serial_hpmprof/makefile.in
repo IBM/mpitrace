@@ -1,0 +1,50 @@
+BFD_LIB   = -L BINUTILS_INSTALL_PATH/lib -lbfd  -L BINUTILS_INSTALL_PATH/lib64 -liberty  -lz 
+
+HPMINC = -I PAPI_INSTALL_PATH/include -I BINUTILS_INSTALL_PATH/include
+PAPI_OBJ = PAPI_INSTALL_PATH/lib/libpapi.a
+
+#-------------------------------------------------------------
+CC = gcc
+CFLAGS = -g -O -DSERIAL_VERSION -DCPU_MHZ=3000 -fPIC $(HPMINC) -I. 
+
+#------------------------------------------
+# targets
+#------------------------------------------
+default:  shared # static 
+
+static :    libhpmprof.a 
+
+shared :    libhpmprof.so
+
+test : main.x
+	./main.x
+
+clean :
+	rm -f *.a *.o *.so *.lst main.x
+
+distclean :
+	rm -f *.a *.o *.so *.lst main.x hpm_histogram* makefile
+
+#------------------------------------------------------------------
+# rules for the wrapper libraries 
+#------------------------------------------------------------------
+
+libhpmprof.a : hpmprof.o
+	ar crv $@ hpmprof.o $(PAPI_OBJ)
+
+libhpmprof.so : hpmprof.o 
+	$(CC) -o libhpmprof.so   -shared  hpmprof.o $(BFD_LIB) $(PAPI_OBJ)
+
+#------------------------------------------
+# rules for .o files
+#------------------------------------------
+hpmprof.o : hpmprof.c
+	$(CC) -c $(CFLAGS) hpmprof.c -o $@
+
+main.x : main.c sub.o
+	gcc -g -O2 main.c sub.o -o main.x ./libhpmprof.so -ldl
+
+sub.o : sub.c
+	gcc -c -g -O2 sub.c
+
+

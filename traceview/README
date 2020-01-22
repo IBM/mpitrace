@@ -1,0 +1,46 @@
+The traceview utility uses OpenGL to draw rectangles for each MPI
+event, using a display format where the x-axis is time, and the 
+y-axis is MPI rank.  To get fast response times, it is best if
+traceview is built to run locally on your workstation or laptop.
+It is also possible to build it as an X-windows application that
+runs on a remote server, but then you would need an X-server with
+OpenGL support, and the graphics will be much slower than a local
+executable.  The viewer basically needs to be able to hold the
+entire trace file in memory, so it is best to limit the size of
+the trace files so that you can handle them on your system.
+
+To build the "traceview" viewer, you need "glut" and the GL user
+interface library "glui".  Many operating systems provide an
+implementation of "glut", and you can build the "glui" library from
+source available at:
+
+https://sourceforge.net/projects/glui/
+
+After ensuring that you have "glut" and "glui" development files, you
+can modify the makefile to set the proper include paths and libraries.
+A sample tracefile (laghos.trc) is included.  Different systems tend 
+to organize the include files differently, and you may need to adjust
+the code in traceview.cpp to ensure that the compiler can find :
+
+#include <GL/glut.h>
+#include <GL/glui.h>  // adjust the path as needed
+
+After building the traceview executable, you can test it using the 
+command : 
+
+traceview sample.trc [enter]
+
+Hit the "help" button for a brief description of the "hot" keys.
+It is highly recommended to use "hot" keys for navigation in the
+trace file, instead of the buttons on the small gui window.  The
+other quite useful feature is to select a region to zoom into by
+holding the right mouse button down while dragging the mouse to
+the right, then release.
+
+
+Note: The tracefile format is just a binary stream of event records,
+      48 bytes per event.  The current version of the viewer will
+      detect the byte-order and automatically swap bytes if there is
+      a need to do that, so the tool should work with any endian order
+      used either for trace generation or trace visualization.
+

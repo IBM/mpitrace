@@ -1,0 +1,76 @@
+This directory has code for a serial (not MPI) version of the HPM library.
+There is also a utility, check_event_list.c, that can be used to determine
+whether a user-specified list of counter events can be counted at the 
+same time without conflict.  There is additional information in a text
+file in the src directory : HardwareCounters.txt.  The basic PAPI code for
+the serial hardware counter library is identical to the code used for the
+MPI version, libmpihpm.so.
+
+===============================================================================
+Build/Install :
+
+  (1) ./configure --with-hpm=[core|uncore] --with-papi=/path/to/papi
+  (2) check the PAPI path in the makefile, and check the link for counters.h
+  (3) make
+  (4) make test
+
+These steps should build and test libhpm.so, and also build the utility
+check_event_list.
+
+Most systems support core events, enabled via :
+
+   ./configure --with-hpm=core --with-papi=/path/to/papi
+
+PAPI can provide access to "uncore" events on some Intel systems, if PAPI is
+built with uncore support.  Use the configure option --with-hpm=uncore 
+instead of --with-hpm=core to request uncore counters.  See the text file
+HardwareCounters.txt in the src directory for additional information.  
+
+===============================================================================
+Hardware counter interface :
+
+To use the serial library libhpm.so you need to add calls to your code to
+initialize, start, and stop the counters, and to print the cumulative counts.
+These steps are handled automatically in the MPI version, libmpihpm.so.
+
+C/C++ :  (need the extern "C" qualifier for declarations for C++ only)
+extern "C" void HPM_Init(void);                 // serial only
+extern "C" void HPM_Start(const char * label);
+extern "C" void HPM_Stop(const char * label);
+extern "C" void HPM_Print(void);                // serial only
+
+Fortran :
+call hpm_init()             !serial only
+call hpm_start('label')
+call hpm_stop('label')
+call hpm_print()            !serial only
+
+The HPM calls are simple wrappers around PAPI.  The basic hardware counter
+context is thread-specific for "core" events : each thread must initialize 
+and read its own counters.  On some Intel systems, there may be support for
+"uncore" counters, depending on your PAPI build.
+
+For non-threaded codes : link with libhpm.so  or  libhpm.a .
+
+For OpenMP codes, the HPM_Start()/HPM_Stop() calls are intended to be made
+by the master thread only.  
+
+You can use counter groups, defined in counters.h, for example :
+
+export HPM_GROUP=2
+
+The list of pre-defined counter groups is very limited.  You can add to 
+them, following the syntax in the header files provided in the counters
+directory.
+
+You can optionally specify your own list of counter events :
+
+export HPM_EVENT_LIST=event0,event1,event2
+
+If you specify your own list, you should run "check_event_list" to make
+sure that the list can be counted by PAPI, without conflicts.  The library
+should work with any valid, conflict-free set of counters that PAPI has
+access to.  Most systems would nominally support :
+
+export HPM_EVENT_LIST=perf::cycles,perf::instructions
+

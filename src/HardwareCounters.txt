@@ -1,0 +1,128 @@
+The library libmpihpm.so includes all of the MPI profiling capability of
+libmpitrace.so, and adds hardware counter collection via PAPI.  The native
+hardware counters on different CPU architectures vary widely.  As a result,
+it will be necessary to add support for different CPUs over time.
+
+===============================================================================
+Building/installing libmpihpm.so
+
+A working version of PAPI is required, and it needs to be built using the 
+-fPIC compiler option so the resulting code can be used in a shared library.
+There is a section on building PAPI below with additional information.
+
+Requirements : mpicc with gcc as the underlying compiler
+               PAPI built with -fPIC
+
+Steps : (1) ./configure --with-hpm=core   --with-papi=/path/to/papi
+        or  ./configure --with-hpm=uncore --with-papi=/path/to/papi
+
+        (2) make libmpihpm.so
+
+On some Intel systems, "uncore" events, including access to counters on 
+memory controllers, can be enabled with PAPI.  Those are designed to be
+read by a single process on each node, so there are significant changes
+to the infrastructure to read and collect counts.  Most systems provide
+access to core counters.  The "core" counters are simplest to interpret
+when there is one MPI rank per core.  The configure script for libmpihpm.so
+requires either --with-hpm=core, or --with-hpm=uncore.  After building the
+library, you can rename it or move it to a location that indicates whether
+the library is for core or uncore events.
+
+In general, it is highly recommended to check counter calibration using 
+simple math kernels as much as possible.  The libmpihpm.so library simply
+reports the counter values returned by PAPI_read(...), interpretation is
+left to the end user.
+
+===============================================================================
+Selecting what hardware events to count
+
+On most systems, it is possible to concurrently count some number of
+different events (typically four to six) without multiplexing.  The approach
+taken here is to construct a limited number of such "counter groups",
+using events that are hopefully of general interest.  Multiplexing is not
+used in libmpihpm.so.
+
+One can select a given counter group to be used by all MPI ranks by setting
+an environment variable :
+
+export HPM_GROUP=1   (for example)
+
+The counter groups are defined in header files; some examples are included
+in the counters directory.  Some MPI parallel applications have good load
+balance, and one can then assign different counter groups to different
+ranks, to cover a larger number of counter events :
+
+export HPM_GROUP_LIST=0,1,2,3,4   (for example)
+
+In the example above, MPI rank 0 gets counter group 0, rank 1 gets group 1,
+rank 2 gets group 2, and so forth ... with a cyclic distribution over ranks.
+As a convenience, one can request cyclic assignment using all defined
+counter groups :
+
+export HPM_GROUP_LIST=all
+
+The predefined groups typically have a very small subset of the available
+native hardware events.  With PAPI, you can get a list of native events
+using the command "papi_native_avail" (redirect output to a file).  You can
+optionally add counter groups, following the syntax in the sample files.
+With libmpihpm.so, instead of using predefined counter groups, you can use
+an arbitrary list of valid events, but you must ensure that the counters
+in your list can all be counted concurrently without conflict.  For example:
+
+export HPM_EVENT_LIST=PM_CMPLU_STALL_LSU,PM_LD_MISS_L1,PM_RUN_CYC
+
+requests counting using three Power9 events : completion stall cycles
+associated with load-store units, L1 D-cache misses, and cycles in the
+run queue.  There is a utility, check_event_list, included to check the
+counters specified by HPM_EVENT_LIST for compatibility (just set the
+environment variable HPM_EVENT_LIST as desired, then ./check_event_list).
+Source for check_event_list is included in the serial_hpm directory.
+
+===============================================================================
+Marking code regions for counting
+
+With libmpihpm.so, counters are automatically started when the code calls
+MPI_Init(), and stopped in MPI_Finalize().  In addition, if you have added
+calls to MPI_Pcontrol(1/0) to mark a region for MPI profiling, you will 
+get a separate report for the counts from that code block.  You can also
+add explicit calls to collect counter data for named blocks of code :
+
+C/C++ syntax :  HPM_Start("label"); ... do work ...; HPM_Stop("label");
+type signature : extern "C" void HPM_Start(const char *);
+                 extern "C" void HPM_Stop(const char *);
+                 where the extern "C" qualifier is needed for C++ only
+
+Fortran : call hpm_start('label') ; ... do work ...; call hpm_stop('label')
+
+The calls to HPM_Start(...)/HPM_Stop(...) may be nested.  Normally all
+MPI ranks will make the same sequence of calls to HPM_Start/Stop.  In 
+some cases, different ranks play significantly different roles, and may
+make very different sequences of HPM_Start/Stop calls.  This is handled
+automatically by libmpihpm.so, which will construct communicators to
+enable separate outputs from each reporting category.
+
+When adding calls to start/stop counters in your code, keep in mind that
+the overhead is rather large ... typically thousands of cycles.  As a 
+result, it is best to instrument codes at a rather coarse-grained level.
+
+Counts are collected in a single text file, hpm_job_summary.jobid.txt.
+This file provides avg, min, and max values for each counter and each
+code block, and a list with every count recorded by every rank, arranged
+by code block.
+
+===============================================================================
+Building PAPI
+
+  (1) get a recent PAPI from http://icl.utk.edu/papi/software/
+  (2) export CC=gcc;       export CFLAGS="-g -O2 -fPIC"
+      export F77=gfortran; export FFLAGS="-g -O2 -fPIC"
+  (3) configure --prefix=/path/to/papi  (optionally specify --with-CPU=<cpu>)
+  (4) make; make install
+  (5) check basic functionality : /path/to/papi/bin/papi_native_avail
+
+One may also add optional components.  For example, on some Intel systems
+you can request "uncore" events using step (3) :
+
+  (3) configure --prefix=/path/to/papi --with-components="perf_event_uncore"
+
+

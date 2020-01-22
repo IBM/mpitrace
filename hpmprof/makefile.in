@@ -1,0 +1,54 @@
+#------------------------------------------------------------------------------
+# set include and library paths for papi and gnu binutils
+#------------------------------------------------------------------------------
+ 
+HPM = -DHPMPROF -I PAPI_INSTALL_PATH/include -I BINUTILS_INSTALL_PATH/include
+PAPI_OBJ = PAPI_INSTALL_PATH/lib/libpapi.a
+BFD_LIB   = -L BINUTILS_INSTALL_PATH/lib -lbfd  -L BINUTILS_INSTALL_PATH/lib64 -liberty -lz
+
+#------------------------------------------------------------------------------
+# use gcc to build the wrapper libraries
+# uncomment -DHAS_INIT_THREAD if your MPI does not support MPI_Init_thread()
+#------------------------------------------------------------------------------
+SET_FREQ = -DCPU_MHZ=3000   # optionally set the CPU freq at compile time
+CC = mpicc
+CFLAGS = -g -O -fPIC $(VPROF) $(HPM) $(SET_FREQ) -I. $(MPI_INC)  -DHAS_INIT_THREAD
+
+#------------------------------------------
+# targets
+#------------------------------------------
+default:  shared # static 
+
+static :    libhpmprof.a  
+
+shared :    libhpmprof.so 
+
+clean :
+	rm -f *.a *.o *.so *.lst
+
+distclean :
+	rm -f *.a *.o *.so *.lst makefile
+
+#------------------------------------------------------------------
+# rules for the wrapper libraries 
+#------------------------------------------------------------------
+
+libhpmprof.a : mpitrace.o mpitrace_sortx.o hpmprof.o       
+	ar crv $@ mpitrace.o mpitrace_sortx.o hpmprof.o $(PAPI_OBJ) $(BFD_LIB)
+
+libhpmprof.so : mpitrace.o mpitrace_sortx.o hpmprof.o
+	$(CC) -o libhpmprof.so    -shared mpitrace.o   mpitrace_sortx.o hpmprof.o $(BFD_LIB) $(PAPI_OBJ)
+
+#------------------------------------------
+# rules for .o files
+#------------------------------------------
+mpitrace.o : mpitrace.c mpitrace_common.c init_part1.c init_part2.c \
+              fortran_wrappers.c mpitrace.h
+	$(CC) -c $(CFLAGS) $(F2C) mpitrace.c -o $@
+
+mpitrace_sortx.o : mpitrace_sortx.c
+	$(CC) -c $(CFLAGS) mpitrace_sortx.c -o $@
+
+hpmprof.o : hpmprof.c
+	$(CC) -c $(CFLAGS) $(F2C) hpmprof.c -o $@
+

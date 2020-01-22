@@ -1,0 +1,10 @@
+CC = /usr/bin/g++
+CFLAGS = -O2 -Wall -Iglui/include
+
+LIBS = -Lglui/lib -lglui -framework OpenGL -framework GLUT
+
+traceview : traceview.cpp 
+	$(CC) $(CFLAGS) traceview.cpp $(LIBS) -o traceview
+
+clean :
+	rm -f traceview

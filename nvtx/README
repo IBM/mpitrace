@@ -1,0 +1,78 @@
+This directory has MPI wrappers that are instrumented with nvtx
+markers.  The idea is to preload the wrapper library for use with
+NVIDIA's profiling tools, thus making MPI calls visible in NVIDIA's
+tools for visual timeline analysis.  The MPI wrappers also provide
+controls for cudaProfilerStart()/cudaProfilerStop(), including support
+for time-window profiling.  This makes it possible to selectively
+profile a time-window without instrumenting the code.
+
+Requirements : CUDA, mpicc with gcc as the underlying compiler
+
+===============================================================================
+Build/Install :
+
+  (1) ./configure --with-cuda=/path/to/cuda
+  (2) make libmpitrace.so   
+
+===============================================================================
+Typical use :
+
+  (1) export LD_PRELOAD=/path/to/libmpitrace.so
+  (2) mpirun -np 1024 ./helper.sh your.exe ...
+      where the helper.sh script turns on nvprof for a selected rank
+  (3) unset LD_PRELOAD
+
+NVIDIA's nvprof is a very powerful tool for analysis of GPU performance,
+but it can be invasive in the context of tightly-coupled MPI parallel
+applications.  Instead of launching one instance of nvprof for every
+MPI rank, there will be less disruption if nvprof is used selectively
+for one specified rank, and a helper script can be used for that.  An
+example of a helper script is shown below for openmpi :
+
+#!/bin/bash
+if [ $OMPI_COMM_WORLD_RANK = 31 ]; then
+  if [ -f nvp.dat ]; then
+    mv nvp.dat nvp.dat.bak
+  fi
+  /usr/local/cuda/bin/nvprof --export-profile nvp.dat "$@"
+else
+ exec "$@"
+fi
+
+In this example, nvprof is turned on for MPI rank 31, and profile data
+is saved in a file "nvp.dat", with a backup made for any pre-existing
+"nvp.dat" file.  One could be more specific about naming the nvprof
+output, using for example a timestamp or a jobid.
+
+With nvprof it can be advantageous to limit profiling to a specific code
+block using cudaProfilerStart()/cudaProfilerStop() or to a specified time
+window.  The following illustrates the time-window profiling method, 
+where the intent is to capture nvprof data for MPI rank 31 with a start
+time of 40 seconds after MPI_Init() and a stop time of 45 seconds after
+MPI_Init() :
+
+Job script :
+  export PROFILE_BEGIN_TIME=40
+  export PROFILE_END_TIME=45
+  export PROFILE_RANK=31
+  export SAVE_LIST=$PROFILE_RANK
+  export LD_PRELOAD=/path/to/nvtx/libmpitrace.so
+  mpirun -np 128 ./helper.sh your.exe [args]
+
+Helper script :
+#!/bin/bash
+if [ $OMPI_COMM_WORLD_RANK = $PROFILE_RANK ]; then
+  if [ -f nvp.dat ]; then
+    mv nvp.dat nvp.dat.bak
+  fi
+  /usr/local/cuda/bin/nvprof --profile-from-start off --export-profile nvp.dat "$@"
+else
+ exec "$@"
+fi
+
+With the time-window profiling method, it is not necessary to instrument
+the code with calls to cudaProfilerStart()/cudaProfilerStop(), and in 
+in fact source code access is not required at all.  The libmpitrace.so 
+library can track the time that has elapsed after MPI_Init() when every 
+MPI function is called, and start and stop CUDA profiling as directed
+via environment variables.
