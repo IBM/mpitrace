@@ -55,7 +55,8 @@ Once you have a histogram file, analyze it with :
 Your executable file should be built with options that include "-g" so the
 tools can translate from instruction address to source file and line number.
 Source code for the bfdprof and annotate_objdump utilities is provided in the
-bfdprof directory.
+bfdprof directory.  The clock tics in annotated source or assembly can be
+hard to find, and it can be useful to use a text editor to search for [0-9]|.
 
 If your system uses static executables and a static MPI library, you will
 need to build the static library libhpmprof.a and link that explicitly when
@@ -93,7 +94,7 @@ Building PAPI
 ===============================================================================
 Additional features and comments
 
-The code in hpmprof.c is set to use CPU cycles to generate interrupts.  Once
+The code in hpmprof.c normally uses CPU cycles to generate interrupts.  Once
 the count of cycles in the run queue reaches a threshold value, an interrupt
 is triggered, and the interrupt handler registers a hit at the tagged address.
 The default threshold value is chosen to generate an interrupt at intervals

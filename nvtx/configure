@@ -31,17 +31,37 @@ do
   esac
 done
 
-if [ -f `which mpicc` ]; then
-  echo found mpicc = `which mpicc`
-  compiler=`mpicc --version | head -n 1 | cut -b 1-3`
-  if [ "$compiler" != "gcc" ]; then
-    echo please set the mpicc command to use gcc as the C compiler and re-run the configure script
-    echo example: "export OMPI_CC=gcc; or export MPICH_CC=gcc" ... exiting
+cray_env=`env | grep CRAYPE_VERSION`
+if [ -z $cray_env ]; then
+  if [ -f `which mpicc` ]; then
+    echo found mpicc = `which mpicc`
+    compiler=`mpicc --version | head -n 1 | cut -b 1-3`
+    if [ "$compiler" != "gcc" ]; then
+      echo please set the mpicc command to use gcc as the C compiler and re-run the configure script
+      echo example: "export OMPI_CC=gcc; or export MPICH_CC=gcc" ... exiting
+      exit
+    else
+     cp makefile.in makefile
+    fi  
   else
-   cp makefile.in makefile
-  fi
+    echo ensure that mpicc is in your PATH and re-run the configure script ... exiting
+    exit
+  fi  
 else
-  echo ensure that mpicc is in your PATH and re-run the configure script ... exiting
+  if [ -f `which cc` ]; then
+    echo found cc = `which cc`
+    compiler=`cc --version | head -n 1 | cut -b 1-3`
+    if [ "$compiler" != "gcc" ]; then
+      echo please set the cc command to use gcc as the C compiler and re-run the configure script ... exiting
+      exit
+    else
+     cp makefile.in makefile
+     sed -i "s/CC = mpicc/CC = cc/g" makefile
+    fi  
+  else
+    echo ensure that cc is in your PATH and re-run the configure script ... exiting
+    exit
+  fi  
 fi
 
 if [ $cuda_flag == 0 ]; then
