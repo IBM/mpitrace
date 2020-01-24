@@ -12,6 +12,7 @@
    ptr = getenv("SLURM_JOBID");
    if (ptr == NULL) ptr = getenv("PBS_JOBID");
    if (ptr == NULL) ptr = getenv("LSB_JOBID");
+   if (ptr == NULL) ptr = getenv("COBALT_JOBID");
    if (ptr != NULL) jobid = atoi(ptr);
    else             jobid = getpid();
    PMPI_Bcast(&jobid, 1, MPI_INT, 0, MPI_COMM_WORLD);
