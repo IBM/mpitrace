@@ -408,7 +408,7 @@ void HPM_Print(void)
 #endif
 {
     int j, ic, rank, indx;
-    int nblocks, max_nblocks, ranks_per_node, max_ranks_per_node;
+    int nblocks, max_nblocks;
     int * all_ranks;
     long long * all_counts;
     double * all_elapsed;
