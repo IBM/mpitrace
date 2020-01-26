@@ -167,6 +167,7 @@ void HPM_Init(void)
              group_list[num_groups] = atoi(ptr);
              ptr = strtok(NULL, delimiters);
              num_groups++;
+             if (num_groups == MAX_GROUPS)  break;
          }
 
          if ( (num_groups > reader_size) &&  (myrank == 0) )
