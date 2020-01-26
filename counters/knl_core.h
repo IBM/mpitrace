@@ -2,7 +2,7 @@
 // KNL core has 3 fixed counters and 2 programmable counters
 
 #define NUM_COUNTERS 5
-#define MAX_GROUPS 6
+#define MAX_GROUPS 4
 
 struct eventStruct {
                       char * name;
