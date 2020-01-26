@@ -21,8 +21,8 @@ struct groupStruct CounterGroup[] =
      "perf::cycles",                 "processor cycles",
      "perf::ref-cycles",             "cycles at the reference frequency",
      "perf::instructions",           "instructions completed",
-     "UOPS_RETIRED:SCALAR_SIMD",     "counts scalar SSE, AVX, AVX2, AVX-512 micro-ops except for loads, div, sqrt",
-     "UOPS_RETIRED:PACKED_SIMD",     "counts packed SSE, AVX, AVX2, AVX-512 micro-ops except for loads, div, sqrt"
+     "UOPS_RETIRED:SCALAR_SIMD",     "counts scalar SSE, AVX, AVX2, AVX-512 micro-ops",
+     "UOPS_RETIRED:PACKED_SIMD",     "counts packed SSE, AVX, AVX2, AVX-512 micro-ops"
    },
  // group 1:
    {
