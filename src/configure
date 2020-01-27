@@ -1,7 +1,7 @@
-#!/bin/bash 
+#!/bin/bash
 set -e
 #parse command arguments
-config_args=$(/usr/bin/getopt -n $0 -l "help,with-vprof,with-locks,with-binutils:,with-hpm:,with-papi:" -o "hvlc:b:p:" -- "$@")
+config_args=$(/usr/bin/getopt -n $0 -l "help,with-vprof,with-locks,with-mpicc:,with-binutils:,with-hpm:,with-papi:" -o "hvlw:c:b:p:" -- "$@")
 eval set -- "$config_args"
 
 help_flag=0
@@ -10,6 +10,7 @@ binutils_flag=0
 mutex_flag=0
 hpm_flag=0
 papi_flag=0
+mpicc_flag=0
 
 arch=`uname -i`
 
@@ -21,6 +22,7 @@ do
      echo "--help  (prints this help message)"
      echo "--with-vprof  (enables pc sampling via the profil routine, requires --with-binutils=/path/to/binutils)"
      echo "--with-locks  (adds mutex lock/unlock around updates to static data for a threadsafe library build)"
+     echo "--with-mpicc=your_mpi_compiler (optionally specify your MPI compiler if it is not mpicc or Cray cc)"
      echo "--with-binutils=/path/to/binutils  (required for vprof support, and must have sub-directories : lib,lib64,include)"
      echo "--with-hpm=[core|uncore]  (enables access to hardware counters, requires --with-papi=/path/to/papi)"
      echo "--with-papi=/path/to/papi  (required for hpm support, and must have sub-directories : lib,include)"
@@ -44,6 +46,15 @@ do
        exit
      fi
      echo using binutils_path=$binutils_path
+     shift 2;;
+
+    -w|--with-mpicc)
+     mpicc_flag=1
+     mpi_compiler="$2"
+     if [ ${mpi_compiler:0:2} == -- ]; then
+       echo error : optionally specify --with-mpicc=mpi_compiler ... exiting
+       exit
+     fi
      shift 2;;
 
     -c|--with-hpm)
@@ -71,37 +82,60 @@ do
   esac
 done
 
-cray_env=`env | grep CRAYPE_VERSION`
-if [ -z $cray_env ]; then
-  if [ -f `which mpicc` ]; then
-    echo found mpicc = `which mpicc`
-    compiler=`mpicc --version | head -n 1 | cut -b 1-3`
-    if [ "$compiler" != "gcc" ]; then
-      echo please set the mpicc command to use gcc as the C compiler and re-run the configure script
-      echo example: "export OMPI_CC=gcc; or export MPICH_CC=gcc" ... exiting
-      exit
-    else
-     cp makefile.in makefile
-    fi  
-  else
-    echo ensure that mpicc is in your PATH and re-run the configure script ... exiting
+# if the user specifies --with-mpicc=mpi_compiler, use it, else use mpicc or Cray cc
+if [ $mpicc_flag == 1 ]; then
+  if [ -z `which $mpi_compiler` ]; then
+    echo ensure that $mpi_compiler is in your PATH and re-run the configure script ... exiting
     exit
+  else
+    if [ -f `which $mpi_compiler` ]; then
+      echo found MPI C compiler = `which $mpi_compiler`
+      compiler=`$mpi_compiler --version | head -n 1 | cut -b 1-3`
+      if [ "$compiler" != "gcc" ]; then
+        echo please set $mpi_compiler to use gcc as the C compiler and re-run the configure script ... exiting
+        exit
+      else
+       cp makefile.in makefile
+       sed -i "s/CC = mpicc/CC = $mpi_compiler/g" makefile
+      fi  
+    else
+      echo ensure that $mpi_compiler is in your PATH and re-run the configure script ... exiting
+      exit
+    fi  
   fi  
 else
-  if [ -f `which cc` ]; then
-    echo found cc = `which cc`
-    compiler=`cc --version | head -n 1 | cut -b 1-3`
-    if [ "$compiler" != "gcc" ]; then
-      echo please set the cc command to use gcc as the C compiler and re-run the configure script ... exiting
-      exit
+  cray_env=`env | grep CRAYPE_VERSION`
+  if [ -z $cray_env ]; then
+    if [ -f `which mpicc` ]; then
+      echo found mpicc = `which mpicc`
+      compiler=`mpicc --version | head -n 1 | cut -b 1-3`
+      if [ "$compiler" != "gcc" ]; then
+        echo please set the mpicc command to use gcc as the C compiler and re-run the configure script
+        echo example: "export OMPI_CC=gcc; or export MPICH_CC=gcc" ... exiting
+        exit
+      else
+       cp makefile.in makefile
+      fi  
     else
-     cp makefile.in makefile
-     sed -i "s/CC = mpicc/CC = cc/g" makefile
+      echo ensure that mpicc is in your PATH and re-run the configure script ... exiting
+      exit
     fi  
   else
-    echo ensure that cc is in your PATH and re-run the configure script ... exiting
-    exit
-  fi  
+    if [ -f `which cc` ]; then
+      echo found cc = `which cc`
+      compiler=`cc --version | head -n 1 | cut -b 1-3`
+      if [ "$compiler" != "gcc" ]; then
+        echo please set the cc command to use gcc as the C compiler and re-run the configure script ... exiting
+        exit
+      else
+       cp makefile.in makefile
+       sed -i "s/CC = mpicc/CC = cc/g" makefile
+      fi  
+    else
+      echo ensure that cc is in your PATH and re-run the configure script ... exiting
+      exit
+    fi  
+  fi
 fi
 
 if [ $mutex_flag == 1 ]; then
