@@ -77,8 +77,7 @@ if [ $mpicc_flag == 1 ]; then
     fi  
   fi  
 else
-  cray_env=`env | grep CRAYPE_VERSION`
-  if [ -z $cray_env ]; then
+  if [ -z `env | grep CRAYPE_VERSION` ]; then
     if [ -f `which mpicc` ]; then
       echo found mpicc = `which mpicc`
       compiler=`mpicc --version | head -n 1 | cut -b 1-3`
