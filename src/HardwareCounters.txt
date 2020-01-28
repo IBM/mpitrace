@@ -26,7 +26,11 @@ access to core counters.  The "core" counters are simplest to interpret
 when there is one MPI rank per core.  The configure script for libmpihpm.so
 requires either --with-hpm=core, or --with-hpm=uncore.  After building the
 library, you can rename it or move it to a location that indicates whether
-the library is for core or uncore events.
+the library is for core or uncore events.  Counter events are listed in a
+file, counters.h.  The configure script attempts to make a soft link to
+one of the sample files in the counters directory.  Please check the link.
+It may be necessary to alter the link or to construct new header files
+for the counters on your system, following the examples that are included.
 
 In general, it is highly recommended to check counter calibration using 
 simple math kernels as much as possible.  The libmpihpm.so library simply

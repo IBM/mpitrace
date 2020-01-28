@@ -14,6 +14,9 @@ copies "makefile.in" to "makefile", and then "make" should build the
 wrapper library.  By using your system's gcc compiler, the resulting
 libmpitrace.so should be compatible with all other compilers on your
 system, and it should work with the version of MPI associated with mpicc.
+The configure script is intended as a conveinence, but it may not handle
+all environments, in which case you can copy makefile.in to makefile, 
+edit the makefile and set options and paths for your system.
 
 To use libmpitrace.so :
 
@@ -31,7 +34,7 @@ The wrapper library intercepts MPI calls and prints a summary in text
 files : mpi_profile.jobid.rank.  Optional features are controlled via
 env variables.  A list of env variables is included in the text file 
 env_variables.txt, and the basic features are described below.  It is
-recommended to test your build of libmpitrace.so using the example 
+recommended to test your build of libmpitrace.so using the examples
 provided in the "mpi_examples" directory, or with your own codes. 
 Extra care may be required for codes that call MPI from a mix of
 languages that include Fortran and C or C++ because some implementations
