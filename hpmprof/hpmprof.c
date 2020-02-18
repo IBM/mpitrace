@@ -317,8 +317,8 @@ void HPM_Prof_init(void)
       return;
    }
 
-   histo_size = (long ) bfd_section_size(file, section);
-   offset     = (long ) bfd_section_vma (file, section);
+   histo_size = (long ) section->size;
+   offset     = (long ) section->vma;
 
    // note : histo_size defined here = size of program text in bytes
    if (histo_size < 0L) {

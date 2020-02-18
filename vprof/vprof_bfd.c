@@ -155,8 +155,8 @@ void mpitrace_vprof_start(void)
           return;
        }
 
-       size   = (long ) bfd_section_size(file, section);
-       offset = (long ) bfd_section_vma (file, section);
+       size   = (long ) section->size;
+       offset = (long ) section->vma;
 
 //     if (myrank == 0) printf("got size = %ld, offset = %ld\n", size, offset);
 

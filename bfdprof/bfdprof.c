@@ -175,7 +175,7 @@ int main(int argc, char * argv[])
       exit(0);
    }
 
-   offset = bfd_section_vma(bfdfile, section);
+   offset = section->vma;
 
    get_symtab(bfdfile);
 
