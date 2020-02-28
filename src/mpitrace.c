@@ -3610,6 +3610,7 @@ void pmpi_file_write_shared(int* fh, void * buf, int * count, int * type, int * 
 #pragma weak mpi_init_thread__=mpi_init_thread_
 #pragma weak mpi_pcontrol__=mpi_pcontrol_
 #pragma weak mpi_finalize__=mpi_finalize_
+#pragma weak mpi_abort__=mpi_abort_
 #pragma weak mpi_comm_rank__=mpi_comm_rank_
 #pragma weak mpi_comm_size__=mpi_comm_size_
 #pragma weak mpi_send__=mpi_send_
@@ -3767,6 +3768,7 @@ void pmpi_file_write_shared(int* fh, void * buf, int * count, int * type, int * 
 #pragma weak mpi_init_thread_=mpi_init_thread
 #pragma weak mpi_pcontrol_=mpi_pcontrol
 #pragma weak mpi_finalize_=mpi_finalize
+#pragma weak mpi_abort_=mpi_abort
 #pragma weak mpi_comm_rank_=mpi_comm_rank
 #pragma weak mpi_comm_size_=mpi_comm_size
 #pragma weak mpi_send_=mpi_send
