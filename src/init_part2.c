@@ -183,6 +183,12 @@
       if (strncasecmp(ptr,"yes",3) == 0) trace_max_rank = ntasks - 1;
    }
 
+   ptr = getenv("TRACE_ALL_RANKS");
+   if (ptr != NULL)
+   {
+      if (strncasecmp(ptr,"yes",3) == 0) trace_max_rank = ntasks - 1;
+   }
+
    ptr = getenv("TRACE_MAX_RANK");
    if (ptr != NULL) trace_max_rank = atoi(ptr);
    if (trace_max_rank >= ntasks) trace_max_rank = ntasks - 1;
