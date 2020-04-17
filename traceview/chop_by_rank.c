@@ -7,17 +7,20 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+struct intPair { int src; int dest; };
+
+typedef union { long offset; struct intPair ranks; } unType;
+
 struct eventstruct {
                      double tbeg;
                      double tend;
                      int taskid;
                      int eventid;
-                     int src;
-                     int dest;
+                     unType UN;  
                      int bytes;
                      int parent;
                      int grandparent;
-                     int abi;
+                     int ioflag;
                    };
 
 struct eventstruct event;
