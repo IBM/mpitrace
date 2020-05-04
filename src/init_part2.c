@@ -77,14 +77,14 @@
    ptr = getenv("PROFILE_BEGIN_TIME");
    if (ptr !=NULL)
    {
-      profile_begin_time = (double) atoi(ptr);
+      profile_begin_time = (double) atof(ptr);
       time_window_profiling = 1;
    }
 
    ptr = getenv("PROFILE_END_TIME");
    if (ptr !=NULL)
    {
-      profile_end_time = (double) atoi(ptr);
+      profile_end_time = (double) atof(ptr);
       if (profile_end_time > profile_begin_time) time_window_profiling = 1;
       else                                       time_window_profiling = 0;
    }
@@ -93,14 +93,14 @@
    ptr = getenv("TRACE_BEGIN_TIME");
    if (ptr !=NULL)
    {
-      trace_begin_time = (double) atoi(ptr);
+      trace_begin_time = (double) atof(ptr);
       time_window_tracing = 1;
    }
 
    ptr = getenv("TRACE_END_TIME");
    if (ptr !=NULL)
    {
-      trace_end_time = (double) atoi(ptr);
+      trace_end_time = (double) atof(ptr);
       if (trace_end_time > trace_begin_time) time_window_tracing = 1;
       else                                   time_window_tracing = 0;
    }
