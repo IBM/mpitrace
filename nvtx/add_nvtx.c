@@ -22,12 +22,26 @@ int main(int argc, char * argv[])
 
    // instrument C wrappers
    idfile = fopen("cids.txt", "r");
+   if (idfile == NULL) {
+     printf("can't open cids.txt ... exiting\n");
+     exit(0);
+   }
+
    for (i=0; i<npts; i++) {
       fscanf(idfile, "%s", idname[i]);
    }
 
    srcfile = fopen("ref_mpitrace.c", "r");
+   if (srcfile == NULL) {
+     printf("can't open ref_mpitrace.c ... exiting\n");
+     exit(0);
+   }
+
    ofile   = fopen("mpitrace.c", "w");
+   if (ofile == NULL) {
+     printf("can't open mpitrace.c ... exiting\n");
+     exit(0);
+   }
 
    // echo 90 lines
    for (i=0; i<90; i++) {
@@ -60,12 +74,26 @@ int main(int argc, char * argv[])
 
    // now instrument Fortran wrappers
    idfile = fopen("fids.txt", "r");
+   if (idfile == NULL) {
+     printf("can't open cids.txt ... exiting\n");
+     exit(0);
+   }
+
    for (i=0; i<npts; i++) {
       fscanf(idfile, "%s", idname[i]);
    }
 
    srcfile = fopen("ref_fortran_wrappers.c", "r");
+   if (srcfile == NULL) {
+     printf("can't open ref_mpitrace.c ... exiting\n");
+     exit(0);
+   }
+
    ofile   = fopen("fortran_wrappers.c", "w");
+   if (ofile == NULL) {
+     printf("can't open mpitrace.c ... exiting\n");
+     exit(0);
+   }
 
    // echo 246 lines for fortran_wrappers.c
    for (i=0; i<246; i++) {
