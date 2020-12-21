@@ -1,5 +1,4 @@
 #!/bin/bash 
-set -e
 #parse command arguments
 config_args=$(/usr/bin/getopt -n $0 -l "help,with-hpm:,with-papi:" -o "hc:p:" -- "$@")
 eval set -- "$config_args"
@@ -133,8 +132,8 @@ if [ $hpm_flag == 1 ]; then
 
 
   echo ""
-  echo "edit makefile and ensure that the path for papi is set correctly"
-  echo "to build the libhpm.so library, check the link for counters.h then type : make libhpm.so"
+  echo "Edit \"makefile\" and ensure that the path for papi is set correctly"
+  echo "To build the libhpm.so library, check the link for counters.h then type : make libhpm.so"
   echo ""
 fi
 

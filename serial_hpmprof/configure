@@ -1,5 +1,4 @@
 #!/bin/bash 
-set -e
 #parse command arguments
 config_args=$(/usr/bin/getopt -n $0 -l "help,with-binutils:,with-papi:" -o "hb:p:" -- "$@")
 eval set -- "$config_args"
@@ -138,9 +137,9 @@ if [ $papi_flag == 1 ]; then
   fi
 
   echo ""
-  echo "edit makefile and ensure that paths for gnu binutils and papi are set correctly"
-  echo "set the nominal CPU frequency in units of MHz on the line : SET_FREQ = -DCPU_MHZ=3000"
-  echo "to build the serial libhpmprof.so library, type : make"
+  echo "Edit \"makefile\" and ensure that paths for gnu binutils and papi are set correctly"
+  echo "Set the nominal CPU frequency in units of MHz on the line : SET_FREQ = -DCPU_MHZ=3000"
+  echo "To build the serial libhpmprof.so library, type : make"
   echo ""
 fi
 

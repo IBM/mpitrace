@@ -3530,6 +3530,7 @@ int MPI_Abort(MPI_Comm comm, int err)
    return rc;
 }
 
+#ifndef SKIP_FORTRAN
 
 /*----------------------------------------------------------*/
 /*    fortran profiling entry points                        */
@@ -4338,3 +4339,4 @@ void pmpi_file_write_shared(int* fh, void * buf, int * count, int * type, int * 
 /*    Fortran-to-C interface with no underscores            */
 /*----------------------------------------------------------*/
 #include "fortran_wrappers.c"
+#endif

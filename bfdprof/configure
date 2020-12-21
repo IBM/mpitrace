@@ -85,7 +85,7 @@ if [ $binutils_flag == 1 ]; then
 fi
 
 echo ""
-echo "edit makefile and ensure that the path for GNU binutils is set correctly"
-echo "to build bfdprof and annotate_objdump, type : make"
+echo "Edit \"makefile\" and ensure that the path for GNU binutils is set correctly"
+echo "To build bfdprof and annotate_objdump, type : make"
 echo ""
 

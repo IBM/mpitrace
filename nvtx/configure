@@ -1,5 +1,4 @@
 #!/bin/bash 
-set -e
 #parse command arguments
 config_args=$(/usr/bin/getopt -n $0 -l "help,with-mpicc:,with-cuda:" -o "hw:c:" -- "$@")
 eval set -- "$config_args"
@@ -44,12 +43,13 @@ done
 
 # if the user specifies --with-mpicc=mpi_compiler, use it, else use mpicc or Cray cc
 if [ $mpicc_flag == 1 ]; then
-  if [ -z `which $mpi_compiler` ]; then
+  MPICC=$( command -v $mpi_compiler )
+  if [ -z "$MPICC" ]; then
     echo ensure that $mpi_compiler is in your PATH and re-run the configure script ... exiting
     exit
   else
-    if [ -f `which $mpi_compiler` ]; then
-      echo found MPI C compiler = `which $mpi_compiler`
+    if [ -x $MPICC ]; then
+      echo found MPI C compiler = $MPICC
       compiler=`$mpi_compiler --version | head -n 1 | cut -b 1-3`
       if [ "$compiler" != "gcc" ]; then
         echo please set $mpi_compiler to use gcc as the C compiler and re-run the configure script ... exiting
@@ -62,11 +62,15 @@ if [ $mpicc_flag == 1 ]; then
       echo ensure that $mpi_compiler is in your PATH and re-run the configure script ... exiting
       exit
     fi  
-  fi  
+  fi 
 else
   if [ -z ${CRAYPE_VERSION} ]; then
-    if [ -f `which mpicc` ]; then
-      echo found mpicc = `which mpicc`
+    MPICC=$( command -v mpicc )
+    if [ -z "$MPICC" ]; then
+      echo ensure that mpicc is in your PATH and re-run the configure script ... exiting
+      exit
+    elif [ -x $MPICC ]; then
+      echo found mpicc = $MPICC
       compiler=$(mpicc --version | head -n 1 | cut -b 1-3)
       if [ "$compiler" != "gcc" ]; then
         echo please set the mpicc command to use gcc as the C compiler and re-run the configure script
@@ -75,13 +79,11 @@ else
       else
        cp makefile.in makefile
       fi  
-    else
-      echo ensure that mpicc is in your PATH and re-run the configure script ... exiting
-      exit
     fi  
   else
-    if [ -f `which cc` ]; then
-      echo found cc = `which cc`
+    CRAYCC=$( command -v cc )
+    if [ -x $CRAYCC ]; then
+      echo found cc = $CRAYCC
       compiler=$(cc --version | head -n 1 | cut -b 1-3)
       if [ "$compiler" != "gcc" ]; then
         echo please set the cc command to use gcc as the C compiler and re-run the configure script ... exiting
@@ -89,12 +91,28 @@ else
       else
        cp makefile.in makefile
        sed -i "s/CC = mpicc/CC = cc/g" makefile
-      fi  
+      fi
     else
       echo ensure that cc is in your PATH and re-run the configure script ... exiting
       exit
-    fi  
+    fi
   fi
+fi
+
+#check for MPICH-style profiling for Fortran entry points
+MPICH=$( command -v mpichversion )
+INTELMPI=$( command -v impi_info )
+if [ ! -z "$MPICH" ]  && [ -x $MPICH ]; then
+  echo using MPICH-sytle profiling for Fortran entry points
+  sed -i "s/ FNAME = / FNAME = -DSKIP_FORTRAN/g" makefile
+fi
+if [ ! -z "$INTELMPI" ] && [ -x $INTELMPI ]; then
+  echo using MPICH-sytle profiling for Fortran entry points
+  sed -i "s/ FNAME = / FNAME = -DSKIP_FORTRAN/g" makefile
+fi
+
+if [ $mutex_flag == 1 ]; then
+  sed -i "s/#THREADSAFE = -DUSE_LOCKS/ THREADSAFE = -DUSE_LOCKS/g" makefile
 fi
 
 if [ $cuda_flag == 0 ]; then
@@ -150,8 +168,8 @@ if [ $cuda_flag == 1 ]; then
   fi
 
   echo ""
-  echo "edit makefile and ensure that the cuda path is set correctly"
-  echo "to build the libmpitrace.so library, type : make libmpitrace.so"
+  echo "Edit makefile and ensure that the cuda path is set correctly"
+  echo "To build the libmpitrace.so library, type : make libmpitrace.so"
   echo ""
 fi
 

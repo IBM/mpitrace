@@ -2,82 +2,79 @@
 Examples of optional environment variables - bash syntax
 ------------------------------------------------------------------------
 
-export ADD_TIMESTAMP=yes   
-Adds a timestamp to the file names of profiler outputs.
-The default is to append a job id and the MPI rank to profiler outputs.
+export ADD_TIMESTAMP=yes  
+Adds a timestamp to the file names of profiler outputs.  The default is to append a job id and 
+the MPI rank to profiler outputs.
 
-export COLLECTIVE_BARRIER=[yes|MPI_Bcast,MPI_Allreduce]
-Adds an internal barrier to all collective routines, or to a specific list.
-The profiler outputs will then show the measured synchronization time.
+export COLLECTIVE_BARRIER=[yes|MPI_Bcast,MPI_Allreduce]  
+Adds an internal barrier to all collective routines, or to a specific list. The profiler outputs 
+will then show the measured synchronization time.
 
-export ENABLE_TRACING=yes
-Turns on event tracing in a region marked by MPI_Pcontrol(1); ...; MPI_Pcontrol(0);
+export ENABLE_TRACING=yes  
+Turns on event tracing in a code region marked by MPI_Pcontrol(1); ...; MPI_Pcontrol(0);
 
-export PROFILE_BEGIN_TIME=500; export PROFILE_END_TIME=520
-Defines a time window for collection of profile data.
-Units are seconds after the program calls MPI_Init().
-When using time window profiling, the user should also set SAVE_LIST.
+export PROFILE_BEGIN_TIME=500; export PROFILE_END_TIME=520 
+Defines a time window for collection of profile data.  Units are seconds after the program calls 
+MPI_Init().  When using time window profiling, the user should also set SAVE_LIST.
 
-export PROFILE_BY_CALL_SITE=yes
-This option tags each MPI call with its instruction address in the
-program text section of the executable file.  The output will then
-show MPI profile data for each distinct call site in the code.
+export PROFILE_BY_CALL_SITE=yes 
+This option tags each MPI call with its instruction address in the program text section of the 
+executable file.  The output will then show MPI profile data for each distinct call site in the 
+code.
 
-export PROFILE_BY_COMMUNICATOR=yes
+export PROFILE_BY_COMMUNICATOR=yes 
 Separately reports MPI calls in buckets based on the size of the communicator.
 
-export SAVE_ALL_TASKS=yes
+export SAVE_ALL_TASKS=yes 
 Setting this to yes will produce one text output file for each MPI rank.
 
-export SAVE_LIST=0,20,40
+export SAVE_LIST=0,20,40 
 Use a comma separated list to specify the ranks that will produce profiler outputs.
 
-export TRACEBACK_ABORT=yes
+export TRACEBACK_ABORT=yes 
 Produce a call-stack (instruction addresses) from MPI_Abort().
 
 export TRACEBACK_ERRORS=yes
 Produce a call-stack (instruction addresses) when any MPI function fails.
 
-export TRACEBACK_LEVEL=2
+export TRACEBACK_LEVEL=2 
 Sets a level for how far up the call chain to start when reporting call stacks.
 
-export TRACE_ALL_EVENTS=yes
+export TRACE_ALL_EVENTS=yes 
 Starts the collection of time-stamped event records in MPI_Init().
 
-export TRACE_ALL_TASKS=yes
-Requests time-stamped event collection from all MPI ranks.
-The default is that records are saved for ranks 0-255.
+export TRACE_ALL_TASKS=yes 
+Requests time-stamped event collection from all MPI ranks.  The default is that records are 
+saved for ranks 0-255.
 
-export TRACE_BEGIN_TIME=200; export TRACE_END_TIME=210;
-Defines a time window for collecting time-stamped event records.
-Units are seconds after the application calls MPI_Init().
+export TRACE_BEGIN_TIME=200; export TRACE_END_TIME=210; 
+Defines a time window for collecting time-stamped event records.  Units are seconds after the 
+application calls MPI_Init().
 
-export TRACE_BUFFER_SIZE=48000000
-Sets the size of the local buffer used by each MPI rank to save time-stamped
-event records.  Units are in bytes, and each record takes 48 bytes.  The default
-value is 4800000 bytes, which is enough for 10^5 events per rank.
+export TRACE_BUFFER_SIZE=48000000 
+Sets the size of the local buffer used by each MPI rank to save time-stamped event records.  
+Units are in bytes, and each record takes 48 bytes.  The default value is 4800000 bytes, which 
+is enough for 10^5 events per rank.
 
-export TRACE_DIR=/path/to/profiler/output
-Optionally set this to send profiler output to a specific directory.
-The default is to write outputs in the working directory for each rank.
+export TRACE_DIR=/path/to/profiler/output 
+Optionally set this to send profiler output to a specific directory.  The default is to write 
+outputs in the working directory for each rank.
 
-export TRACE_DISABLE_LIST=MPI_Iprobe,MPI_Comm_rank
-Optionally specify a list of MPI calls to exclude from event tracing.
-The listed routines will still appear in the cumulative profile data.
+export TRACE_DISABLE_LIST=MPI_Iprobe,MPI_Comm_rank 
+Optionally specify a list of MPI calls to exclude from event tracing.  The listed routines will 
+still appear in the cumulative profile data.
 
-export TRACE_MIN_RANK=40;  export TRACE_MAX_RANK=50;
-Specify a contiguous band of MPI ranks that will save event records for trace
-visualization.  The defaults are to save data for ranks 0-255.
+export TRACE_MIN_RANK=40;  export TRACE_MAX_RANK=50; 
+Specify a contiguous band of MPI ranks that will save event records for trace visualization.  
+The defaults are to save data for ranks 0-255.
 
-export TRACE_SEND_PATTERN=yes
-This turns on tracking of source and destination for MPI calls that have
-specific destination ranks.  The accumulated data is reported in text files
-that characterize the communication pattern : how many messages and bytes 
-are sent from a given MPI rank to various destination ranks.
+export TRACE_SEND_PATTERN=yes 
+This turns on tracking of source and destination for MPI calls that have specific destination 
+ranks.  The accumulated data is reported in text files that characterize the communication pattern:
+how many messages and bytes are sent from a given MPI rank to various destination ranks.
 
-export TRANSLATE_RANKS=yes
-When TRACE_SEND_PATTERN=yes (described above) you can optionally set this
-variable to translate the ranks from an arbitrary communicator to the rank
-in MPI_COMM_WORLD.  Such a translation may be required to properly characterize
-the communication pattern.  The default is no, in which case the destination
-rank that is reported is just the value that appeared in the MPI call.
+export TRANSLATE_RANKS=yes When TRACE_SEND_PATTERN=yes (described above) 
+You can optionally set this variable to translate the ranks from an arbitrary communicator to the 
+rank in MPI_COMM_WORLD.  Such a translation may be required to properly characterize the 
+communication pattern.  The default is no, in which case the destination rank that is reported is 
+just the value that appeared in the MPI call.
