@@ -1,9 +1,17 @@
 #!/bin/bash 
+
 #parse command arguments
-config_args=$(/usr/bin/getopt -n $0 -l "help,with-mpicc:" -o "hw:" -- "$@")
+config_args=$(/usr/bin/getopt -n $0 -l "help,with-mpicc:with-fortran:" -o "hw:f:" -- "$@")
+
+if [ $? -ne 0 ]; then
+  echo check arguments :  ./configure --help
+  exit
+fi
+
 eval set -- "$config_args"
 
 mpicc_flag=0
+fortran_flag=1
 
 while true 
 do
@@ -12,6 +20,7 @@ do
      echo "configure options :"
      echo "--help  (prints this help message)"
      echo "--with-mpicc=your_mpi_compiler (needed only if your MPI compiler is not mpicc or Cray cc)"
+     echo "--with-fortran=[yes|no]  (default is \"yes\", specify \"no\" to wrap only the C interfaces to MPI)"
      echo "normal syntax : ./configure "
      exit;;
   
@@ -88,15 +97,16 @@ else
   fi
 fi
 
-#check for MPICH-style profiling for Fortran entry points
-MPICH=$( command -v mpichversion )
-INTELMPI=$( command -v impi_info )
-if [ ! -z "$MPICH" ]  && [ -x $MPICH ]; then
-  echo using MPICH-sytle profiling for Fortran entry points
-  sed -i "s/ FNAME = / FNAME = -DSKIP_FORTRAN/g" makefile
+#check for inclusion of Fortran MPI profiling entry points
+MPICH_CMD=$( command -v mpichversion )
+INTELMPI_CMD=$( command -v impi_info )
+if [ ! -z "$MPICH_CMD" ]  && [ -x $MPICH_CMD ]; then
+  fortran_flag=0;
 fi
-if [ ! -z "$INTELMPI" ] && [ -x $INTELMPI ]; then
-  echo using MPICH-sytle profiling for Fortran entry points
+if [ ! -z "$INTELMPI_CMD" ] && [ -x $INTELMPI_CMD ]; then
+  fortran_flag=0;
+fi
+if [ $fortran_flag == "0" ]; then
   sed -i "s/ FNAME = / FNAME = -DSKIP_FORTRAN/g" makefile
 fi
 

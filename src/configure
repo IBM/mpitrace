@@ -1,6 +1,13 @@
 #!/bin/bash
+
 #parse command arguments
-config_args=$(/usr/bin/getopt -n $0 -l "help,with-vprof,with-locks,with-mpicc:,with-binutils:,with-hpm:,with-papi:" -o "hvlw:c:b:p:" -- "$@")
+config_args=$(/usr/bin/getopt -n $0 -l "help,with-vprof,with-locks,with-mpicc:,with-binutils:,with-hpm:,with-papi:,with-fortran:" -o "hvlw:c:b:p:f:" -- "$@")
+
+if [ $? -ne 0 ]; then
+  echo check arguments :  ./configure --help
+  exit
+fi
+
 eval set -- "$config_args"
 
 help_flag=0
@@ -10,6 +17,7 @@ mutex_flag=0
 hpm_flag=0
 papi_flag=0
 mpicc_flag=0
+fortran_flag=1
 
 arch=`uname -i`
 
@@ -21,10 +29,11 @@ do
      echo "--help  (prints this help message)"
      echo "--with-vprof  (enables pc sampling via the profil routine, requires --with-binutils=/path/to/binutils)"
      echo "--with-locks  (adds mutex lock/unlock around updates to static data for a threadsafe library build)"
-     echo "--with-mpicc=your_mpi_compiler (needed only if your MPI compiler is not mpicc or Cray cc)"
+     echo "--with-mpicc=your_mpi_compiler  (needed only if your MPI compiler is not mpicc or Cray cc)"
      echo "--with-binutils=/path/to/binutils  (required only for vprof support, and must have sub-directories : lib,lib64,include)"
      echo "--with-hpm=[core|uncore]  (enables access to hardware counters, requires --with-papi=/path/to/papi)"
      echo "--with-papi=/path/to/papi  (required for hpm support, and must have sub-directories : lib,include)"
+     echo "--with-fortran=[yes|no]  (default is \"yes\", specify \"no\" to wrap only the C interfaces to MPI)"
      exit;;
   
     -v|--with-vprof)
@@ -40,26 +49,18 @@ do
     -b|--with-binutils)
      binutils_flag=1
      binutils_path="$2"
-     if [ ${binutils_path:0:2} == -- ]; then
-       echo error : specify --with-binutils=/path/to/binutils ... exiting
-       exit
-     fi
      echo using binutils_path=$binutils_path
      shift 2;;
 
     -w|--with-mpicc)
      mpicc_flag=1
      mpi_compiler="$2"
-     if [ ${mpi_compiler:0:2} == -- ]; then
-       echo error : optionally specify --with-mpicc=mpi_compiler ... exiting
-       exit
-     fi
      shift 2;;
 
     -c|--with-hpm)
      hpm_flag=1
      counter_type="$2"
-     if [ ${counter_type:0:2} == -- ]; then
+     if [ ${counter_type} != "core" ] && [ ${counter_type} != "uncore" ]; then
        echo error : specify --with-hpm=core  or  --with-hpm=uncore ... exiting
        exit
      fi
@@ -68,11 +69,18 @@ do
     -p|--with-papi)
      papi_flag=1
      papi_path="$2"
-     if [ ${papi_path:0:2} == -- ]; then
-       echo error : specify --with-papi=/path/to/papi ... exiting
+     echo using papi_path=$papi_path
+     shift 2;;
+
+    -f|--with-fortran)
+     fortran_option="$2"
+     if [ ${fortran_option} != "no" ] && [ ${fortran_option} != "yes" ]; then
+       echo error : specify --with-fortran=yes  or --with-fortran=no ... exiting
        exit
      fi
-     echo using papi_path=$papi_path
+     if [ $fortran_option == "no" ]; then
+       fortran_flag=0;
+     fi
      shift 2;;
 
     --)
@@ -139,15 +147,16 @@ else
   fi
 fi
 
-#check for MPICH-style profiling for Fortran entry points
-MPICH=$( command -v mpichversion )
-INTELMPI=$( command -v impi_info )
-if [ ! -z "$MPICH" ]  && [ -x $MPICH ]; then
-  echo using MPICH-sytle profiling for Fortran entry points
-  sed -i "s/ FNAME = / FNAME = -DSKIP_FORTRAN/g" makefile
+#check for inclusion of Fortran MPI profiling entry points
+MPICH_CMD=$( command -v mpichversion )
+INTELMPI_CMD=$( command -v impi_info )
+if [ ! -z "$MPICH_CMD" ]  && [ -x $MPICH_CMD ]; then
+  fortran_flag=0;
 fi
-if [ ! -z "$INTELMPI" ] && [ -x $INTELMPI ]; then
-  echo using MPICH-sytle profiling for Fortran entry points
+if [ ! -z "$INTELMPI_CMD" ] && [ -x $INTELMPI_CMD ]; then
+  fortran_flag=0;
+fi
+if [ $fortran_flag == "0" ]; then
   sed -i "s/ FNAME = / FNAME = -DSKIP_FORTRAN/g" makefile
 fi
  

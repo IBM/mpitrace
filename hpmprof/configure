@@ -1,12 +1,20 @@
 #!/bin/bash 
+
 #parse command arguments
-config_args=$(/usr/bin/getopt -n $0 -l "help,with-mpicc:,with-binutils:,with-papi:" -o "hw:b:p:" -- "$@")
+config_args=$(/usr/bin/getopt -n $0 -l "help,with-mpicc:,with-binutils:,with-papi:with-fortran:" -o "hw:b:p:f:" -- "$@")
+
+if [ $? -ne 0 ]; then
+  echo check arguments :  ./configure --help
+  exit
+fi
+
 eval set -- "$config_args"
 
 help_flag=0
 binutils_flag=0
 papi_flag=0
 mpicc_flag=0
+fortran_flag=1
 
 while true 
 do
@@ -17,6 +25,7 @@ do
      echo "--with-mpicc=your_mpi_compiler (needed only if your MPI compiler is not mpicc or Cray cc)"
      echo "--with-binutils=/path/to/binutils  (required and must have sub-directories : lib,lib64,include)"
      echo "--with-papi=/path/to/papi  (required and must have sub-directories : lib,include)"
+     echo "--with-fortran=[yes|no]  (default is \"yes\", specify \"no\" to wrap only the C interfaces to MPI)"
      exit;;
   
     -w|--with-mpicc)
@@ -46,6 +55,17 @@ do
        exit
      fi
      echo using papi_path=$papi_path
+     shift 2;;
+
+    -f|--with-fortran)
+     fortran_option="$2"
+     if [ ${fortran_option} != "no" ] && [ ${fortran_option} != "yes" ]; then
+       echo error : specify --with-fortran=yes  or --with-fortran=no ... exiting
+       exit
+     fi
+     if [ $fortran_option == "no" ]; then
+       fortran_flag=0;
+     fi
      shift 2;;
 
     --)
@@ -112,15 +132,16 @@ else
   fi
 fi
 
-#check for MPICH-style profiling for Fortran entry points
-MPICH=$( command -v mpichversion )
-INTELMPI=$( command -v impi_info )
-if [ ! -z "$MPICH" ]  && [ -x $MPICH ]; then
-  echo using MPICH-sytle profiling for Fortran entry points
-  sed -i "s/ FNAME = / FNAME = -DSKIP_FORTRAN/g" makefile
+#check for inclusion of Fortran MPI profiling entry points
+MPICH_CMD=$( command -v mpichversion )
+INTELMPI_CMD=$( command -v impi_info )
+if [ ! -z "$MPICH_CMD" ]  && [ -x $MPICH_CMD ]; then
+  fortran_flag=0;
 fi
-if [ ! -z "$INTELMPI" ] && [ -x $INTELMPI ]; then
-  echo using MPICH-sytle profiling for Fortran entry points
+if [ ! -z "$INTELMPI_CMD" ] && [ -x $INTELMPI_CMD ]; then
+  fortran_flag=0;
+fi
+if [ $fortran_flag == "0" ]; then
   sed -i "s/ FNAME = / FNAME = -DSKIP_FORTRAN/g" makefile
 fi
 
