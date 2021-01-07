@@ -11,7 +11,7 @@ fi
 eval set -- "$config_args"
 
 cuda_flag=0
-mpicc_flag=1
+mpicc_flag=0
 fortran_flag=1
 
 while true 
@@ -43,6 +43,17 @@ do
      fi
      echo using cuda_path=$cuda_path
      shift 2;;
+
+    -f|--with-fortran)
+     fortran_option="$2"
+     if [ ${fortran_option} != "no" ] && [ ${fortran_option} != "yes" ]; then
+       echo error : specify --with-fortran=yes  or --with-fortran=no ... exiting
+       exit
+     fi  
+     if [ $fortran_option == "no" ]; then
+       fortran_flag=0;
+     fi  
+     shift 2;; 
 
     --)
      shift

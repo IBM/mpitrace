@@ -1,7 +1,7 @@
 #!/bin/bash 
 
 #parse command arguments
-config_args=$(/usr/bin/getopt -n $0 -l "help,with-mpicc:with-fortran:" -o "hw:f:" -- "$@")
+config_args=$(/usr/bin/getopt -n $0 -l "help,with-mpicc:,with-fortran:" -o "hw:f:" -- "$@")
 
 if [ $? -ne 0 ]; then
   echo check arguments :  ./configure --help
@@ -25,13 +25,19 @@ do
      exit;;
   
     -w|--with-mpicc)
-     mpicc_flag=1
      mpi_compiler="$2"
-     if [ ${mpi_compiler:0:2} == -- ]; then
-       echo error : optionally specify --with-mpicc=mpi_compiler ... exiting
+     shift 2;; 
+
+    -f|--with-fortran)
+     fortran_option="$2"
+     if [ ${fortran_option} != "no" ] && [ ${fortran_option} != "yes" ]; then
+       echo error : specify --with-fortran=yes  or --with-fortran=no ... exiting
        exit
      fi  
-     shift 2;; 
+     if [ $fortran_option == "no" ]; then
+       fortran_flag=0;
+     fi  
+     shift 2;;
 
     --)
      shift

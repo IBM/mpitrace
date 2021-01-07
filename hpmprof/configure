@@ -1,7 +1,7 @@
 #!/bin/bash 
 
 #parse command arguments
-config_args=$(/usr/bin/getopt -n $0 -l "help,with-mpicc:,with-binutils:,with-papi:with-fortran:" -o "hw:b:p:f:" -- "$@")
+config_args=$(/usr/bin/getopt -n $0 -l "help,with-mpicc:,with-binutils:,with-papi:,with-fortran:" -o "hw:b:p:f:" -- "$@")
 
 if [ $? -ne 0 ]; then
   echo check arguments :  ./configure --help
@@ -31,29 +31,17 @@ do
     -w|--with-mpicc)
      mpicc_flag=1
      mpi_compiler="$2"
-     if [ ${mpi_compiler:0:2} == -- ]; then
-       echo error : optionally specify --with-mpicc=mpi_compiler ... exiting
-       exit
-     fi  
      shift 2;; 
 
     -b|--with-binutils)
      binutils_flag=1
      binutils_path="$2"
-     if [ ${binutils_path:0:2} == -- ]; then
-       echo error : specify --with-binutils=/path/to/binutils ... exiting
-       exit
-     fi
      echo using binutils_path=$binutils_path
      shift 2;;
 
     -p|--with-papi)
      papi_flag=1
      papi_path="$2"
-     if [ ${papi_path:0:2} == -- ]; then
-       echo error : specify --with-papi=/path/to/papi ... exiting
-       exit
-     fi
      echo using papi_path=$papi_path
      shift 2;;
 
@@ -146,12 +134,12 @@ if [ $fortran_flag == "0" ]; then
 fi
 
 if [ $binutils_flag == 0 ]; then
-  echo GNU binutils is required : ./configure --with-binutils=/path/to/binutils --with-papi=/path/to/papi
+  echo GNU binutils and PAPI are required : ./configure --with-binutils=/path/to/binutils --with-papi=/path/to/papi
   exit
 fi
 
 if [ $papi_flag == 0 ]; then
-  echo PAPI is required : ./configure --with-binutils=/path/to/binutils --with-papi=/path/to/papi
+  echo PAPI and GNU binutils are required : ./configure --with-binutils=/path/to/binutils --with-papi=/path/to/papi
   exit
 fi
 

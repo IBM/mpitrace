@@ -734,9 +734,5 @@ void print_papi_error(int rc)
      case PAPI_ECOMBO :
        fprintf(stderr, "PAPI error : Bad combination of features\n");
        break;
-
-     case PAPI_ECMP_DISABLED :
-       fprintf(stderr, "PAPI error : Component containing event is disabled\n");
-       break;
    }
 }
