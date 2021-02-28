@@ -53,6 +53,7 @@ if [ $mpicc_flag == 1 ]; then
     exit
   else
     if [ -x $MPICC ]; then
+      MPI_BINDIR=`dirname $MPICC`
       echo found MPI C compiler = $MPICC
       compiler=`$mpi_compiler --version | head -n 1 | cut -b 1-3`
       if [ "$compiler" != "gcc" ]; then
@@ -74,6 +75,7 @@ else
       echo ensure that mpicc is in your PATH and re-run the configure script ... exiting
       exit
     elif [ -x $MPICC ]; then
+      MPI_BINDIR=`dirname $MPICC`
       echo found mpicc = $MPICC
       compiler=$(mpicc --version | head -n 1 | cut -b 1-3)
       if [ "$compiler" != "gcc" ]; then
@@ -87,6 +89,7 @@ else
   else
     CRAYCC=$( command -v cc )
     if [ -x $CRAYCC ]; then
+      MPI_BINDIR=`dirname $CRAYCC`
       echo found cc = $CRAYCC
       compiler=$(cc --version | head -n 1 | cut -b 1-3)
       if [ "$compiler" != "gcc" ]; then
@@ -104,8 +107,8 @@ else
 fi
 
 #check for inclusion of Fortran MPI profiling entry points
-MPICH_CMD=$( command -v mpichversion )
-INTELMPI_CMD=$( command -v impi_info )
+MPICH_CMD=$MPI_BINDIR/mpichversion
+INTELMPI_CMD=$MPI_BINDIR/impi_info
 if [ ! -z "$MPICH_CMD" ]  && [ -x $MPICH_CMD ]; then
   fortran_flag=0;
 fi
