@@ -16,6 +16,8 @@
 #include <cuda_profiler_api.h>
 #include <nvToolsExt.h>
 #endif
+#include <dlfcn.h>
+#include <stdint.h>
 
 /*----------------------------------------------------------*/
 /*    dimensions of arrays                                  */
@@ -117,19 +119,19 @@ static int event_buffer_overflow = 0;
 static int add_timestamp = 0;
 static char timestamp[12];
 
-static long long event_count[MAX_IDS];
+static long event_count[MAX_IDS];
 static double total_time[MAX_IDS];
 static double total_bytes[MAX_IDS];
 
 static char label[MAX_IDS][80];
 
-static long long bin_count[MAX_IDS][MAX_BINS];
+static long bin_count[MAX_IDS][MAX_BINS];
 static double bin_bytes[MAX_IDS][MAX_BINS];
 static double bin_time[MAX_IDS][MAX_BINS];
 
 static double total_size[MAX_BINS];
 static int comm_size[MAX_BINS];
-static long long comm_count[MAX_IDS][MAX_BINS];
+static long comm_count[MAX_IDS][MAX_BINS];
 static double comm_bytes[MAX_IDS][MAX_BINS];
 static double comm_time[MAX_IDS][MAX_BINS];
 
@@ -148,16 +150,18 @@ static int disable_tracing[MAX_IDS];
 /*-----------------------------------------------*/
 /* variables for profiling by the caller address */
 /*-----------------------------------------------*/
-#define MAX_PROFILE_BLOCKS 10000
 #define FIFO_DEPTH 16
-
+static int max_profile_blocks = 10000;
+static int max_stack_depth = 4;
+static int max_reported_stacks = 50;
 static int profile_block = 0;
-static int profile_by_call_site = 0;
+static int profile_by_call_stack= 0;
 static int profile_fifo[FIFO_DEPTH];
-static long long profile_call_count[MAX_PROFILE_BLOCKS][MAX_IDS];;
-static int profile_callsite[MAX_PROFILE_BLOCKS];
-static double profile_elapsed_time[MAX_PROFILE_BLOCKS];
-static double profile_callsite_time[MAX_PROFILE_BLOCKS][MAX_IDS];
+static long ** profile_stack;
+static long ** profile_call_count;
+static unsigned int * profle_key;
+static double * profile_elapsed_time;
+static double ** profile_function_time;
 
 /*----------------------------------------------------------*/
 /*    function prototypes                                   */
@@ -165,6 +169,8 @@ static double profile_callsite_time[MAX_PROFILE_BLOCKS][MAX_IDS];
 static void LogEvent(int, struct timeval, struct timeval, int, int, int, MPI_Comm);
 static void LogIOEvent(int, struct timeval, struct timeval, long, int, MPI_Comm);
 static void get_parents(int, int *, int *);
+static void get_stack(int, unsigned int *, long *);
+static inline unsigned int fletcher32(const uint16_t *, int);
 static void write_tracefile(FILE *, struct eventstruct *, int);
 static void reverse_byte_order(char *, char *, int);
 static void swap8(char * in, char * out);
@@ -172,10 +178,10 @@ static void swap4(char * in, char * out);
 static void write_profile_data(void);
 static void write_profile_data_myrank(void);
 static int index_from_address(int);
-static void print_profile_by_call_site(FILE *);
+static int index_from_key(unsigned int);
+static void print_profile_by_call_stack(FILE *);
 static void initialize_summary_data(void);
 static void stop_timers(void);
-static void print_profile_by_call_site(FILE *);
 
 void mpitrace_traceback(int *);
 void mpitrace_handler(MPI_Comm *comm, int *error);

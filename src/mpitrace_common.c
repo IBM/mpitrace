@@ -8,7 +8,7 @@
 void LogEvent(int id, struct timeval TV1, struct timeval TV2,
               int src, int dest, int bytes, MPI_Comm comm)
 {
-   unsigned int k, bin, limit;
+   unsigned int k, bin, limit, key;
    int size, parent, grandparent;
    int dx1, dy1, dz1;
    int dx2, dy2, dz2;
@@ -89,23 +89,19 @@ void LogEvent(int id, struct timeval TV1, struct timeval TV2,
 
    timediff = tend - tbeg;
 
-   if (profile_by_call_site)
+   if (profile_by_call_stack)
    {
-      get_parents(traceback_level, &parent, &grandparent);
-
-      if (parent != 0)
-      {
 #ifdef USE_LOCKS
-         pthread_mutex_lock(&lock);
+      pthread_mutex_lock(&lock);
 #endif
-         k = index_from_address(parent);
-         profile_call_count[k][id]++;
-         profile_callsite_time[k][id] += timediff;
-         profile_elapsed_time[k] += timediff;
+      get_stack(traceback_level, &key, profile_stack[profile_block]);
+      k = index_from_key(key);
+      profile_call_count[k][id]++;
+      profile_function_time[k][id] += timediff;
+      profile_elapsed_time[k] += timediff;
 #ifdef USE_LOCKS
-         pthread_mutex_unlock(&lock);
+      pthread_mutex_unlock(&lock);
 #endif
-      }
 
    }
 
@@ -231,7 +227,7 @@ void LogEvent(int id, struct timeval TV1, struct timeval TV2,
 void LogIOEvent(int id, struct timeval TV1, struct timeval TV2,
                 long offset, int bytes, MPI_Comm comm)
 {
-   unsigned int k, bin, limit;
+   unsigned int k, bin, limit, key;
    int size, parent, grandparent;
    int dx1, dy1, dz1;
    int dx2, dy2, dz2;
@@ -310,23 +306,19 @@ void LogIOEvent(int id, struct timeval TV1, struct timeval TV2,
 
    timediff = tend - tbeg;
 
-   if (profile_by_call_site)
+   if (profile_by_call_stack)
    {
-      get_parents(traceback_level, &parent, &grandparent);
-
-      if (parent != 0)
-      {
 #ifdef USE_LOCKS
-         pthread_mutex_lock(&lock);
+      pthread_mutex_lock(&lock);
 #endif
-         k = index_from_address(parent);
-         profile_call_count[k][id]++;
-         profile_callsite_time[k][id] += timediff;
-         profile_elapsed_time[k] += timediff;
+      get_stack(traceback_level, &key, profile_stack[profile_block]);
+      k = index_from_key(key);
+      profile_call_count[k][id]++;
+      profile_function_time[k][id] += timediff;
+      profile_elapsed_time[k] += timediff;
 #ifdef USE_LOCKS
-         pthread_mutex_unlock(&lock);
+      pthread_mutex_unlock(&lock);
 #endif
-      }
 
    }
 
@@ -424,9 +416,9 @@ void LogIOEvent(int id, struct timeval TV1, struct timeval TV2,
 /*===========================================================*/
 /* routine to get the parent/grandparent instruction address */
 /*===========================================================*/
-void get_parents(int level, int *parent, int *grandparent)
+static void get_parents(int level, int *parent, int *grandparent)
 {
-  int i, depth;
+  int depth;
   void * addresses[MAX_CALL_DEPTH];
 #ifdef BIG_ENDIAN
   struct uPair { unsigned hi ; unsigned lo ; };
@@ -449,6 +441,28 @@ void get_parents(int level, int *parent, int *grandparent)
   else                   *grandparent = 0;
 
   return;
+}
+
+void get_stack(int level, unsigned int * key, long * stack)
+{
+  int i, depth, len;
+  const uint16_t * ptr;
+  void * addresses[MAX_CALL_DEPTH];
+
+  depth = backtrace(addresses, MAX_CALL_DEPTH);
+
+  for (i=0; i<max_stack_depth; i++)
+  {
+    if (depth - 5 + i > level) profile_stack[profile_block][i] = (long) addresses[3+i+level];
+    else break;
+  }
+
+  ptr = (const uint16_t *) &profile_stack[profile_block][0];
+
+  len = max_stack_depth*sizeof(long);
+
+  *key = fletcher32(ptr, len);
+
 }
 
 /*----------------------------------*/
@@ -654,19 +668,19 @@ void mpitrace_summary_stop_(void)
 /*==========================================================*/
 void initialize_summary_data(void)
 {
-    int i, id, bin;
+    int i, j, id, bin;
     struct timeval TV;
     struct rusage RU;
 
     for (id=0; id<MAX_IDS; id++)
     {
-       event_count[id] = 0LL;
+       event_count[id] = 0L;
        total_time[id]  = 0.0;
        total_bytes[id] = 0.0;
 
        for (bin=0; bin<MAX_BINS; bin++)
        {
-          bin_count[id][bin] = 0LL;
+          bin_count[id][bin] = 0L;
           bin_bytes[id][bin] = 0.0;
           bin_time[id][bin]  = 0.0;
        }
@@ -678,7 +692,7 @@ void initialize_summary_data(void)
        {
           for (bin=0; bin<MAX_BINS; bin++)
           {
-             comm_count[id][bin] = 0LL;
+             comm_count[id][bin] = 0L;
              comm_bytes[id][bin] = 0.0;
              comm_time[id][bin]  = 0.0;
           }
@@ -687,16 +701,20 @@ void initialize_summary_data(void)
        for (bin=0; bin<MAX_BINS; bin++) total_size[bin] = 0;
     }
 
-    if (profile_by_call_site) 
+    if (profile_by_call_stack) 
     {
-       for (i=0; i<MAX_PROFILE_BLOCKS; i++)
+       profile_block = 0;
+
+       for (i=0; i<max_profile_blocks; i++)
        {
            profile_elapsed_time[i] = 0.0;
 
+           for (j=0; j<max_stack_depth; j++) profile_stack[i][j] = 0L;
+
            for (id=0; id<MAX_IDS; id++)
            {
-               profile_call_count[i][id] = 0LL;
-               profile_callsite_time[i][id] = 0.0;
+               profile_call_count[i][id] = 0L;
+               profile_function_time[i][id] = 0.0;
            }
        }
     }
@@ -808,10 +826,10 @@ void swap4(char * in, char * out)
 }
 
 
-/*=============================================================*/
-/* routine to take an instruction address and return its index */
-/*=============================================================*/
-int index_from_address(int address)
+/*==============================================================*/
+/* routine to take an unsigned integer key and return its index */
+/*==============================================================*/
+int index_from_key(unsigned int key)
 {
    int i, k, match;
 
@@ -827,7 +845,7 @@ int index_from_address(int address)
           i = profile_fifo[k];
           if (i >= 0)
           {
-              if (address == profile_callsite[i])
+              if (key == profle_key[i])
               {
                   match = 1;
                   break;
@@ -839,11 +857,11 @@ int index_from_address(int address)
    if (match == 1) return i;
 
    /*-------------------------------------------------------*/
-   /* not found in the fifo, so check all known code blocks */
+   /* not found in the fifo, so check all known call stacks */
    /*-------------------------------------------------------*/
    for (i=0; i<profile_block; i++)
    {
-       if (address == profile_callsite[i])
+       if (key == profle_key[i])
        {
            match = 1;
            break;
@@ -851,17 +869,17 @@ int index_from_address(int address)
    }
 
    /*------------------------------------------------*/
-   /* if there is no match, this is a new code block */
+   /* if there is no match, this is a new call stack */
    /*------------------------------------------------*/
    if (match == 0)
    {
        i = profile_block;
-       profile_callsite[i] = address;
+       profle_key[i] = key;
        profile_block ++;
    }
 
    /*-----------------------------------------------*/
-   /* save the latest code block in the fifo        */
+   /* save the latest call stack key in the fifo    */
    /*-----------------------------------------------*/
    for (k=FIFO_DEPTH-2; k>=0; k--) profile_fifo[k+1] = profile_fifo[k];
 
@@ -871,13 +889,17 @@ int index_from_address(int address)
 
 }
 
+
 /*==========================================================*/
-/* routine to print the profile with instruction addresses  */
+/* routine to print the profile with call stacks            */
 /*==========================================================*/
-static void print_profile_by_call_site(FILE * fh)
+static void print_profile_by_call_stack(FILE * fh)
 {
-    int i, id, k;
+    int i, j, id, k, rc;
     int * profile_sorted_index;
+    long location, offset;
+    void * address;
+    Dl_info dlinfo;
 
     profile_sorted_index = (int *) malloc(profile_block*sizeof(int));
 
@@ -885,28 +907,52 @@ static void print_profile_by_call_site(FILE * fh)
 
     fprintf(fh, "\n");
     fprintf(fh,"-----------------------------------------------------------------\n");
-    fprintf(fh, "Profile by call site, traceback level = %d\n", traceback_level);
+    fprintf(fh, "Profile by call stack, traceback level = %d, number of stacks = %d\n", traceback_level, profile_block);
     fprintf(fh,"-----------------------------------------------------------------\n");
-    fprintf(fh, "Use addr2line to map the address to source file and line number.\n");
-    fprintf(fh, "Ensure -g is used for compilation and linking.                \n");
+    fprintf(fh, "Use addr2line to map addresses to source file and line number.\n");
+    fprintf(fh, "\n");                                                                  
+    fprintf(fh, "For addresses in the executable file :\n");
+    fprintf(fh, "    addr2line -i -f -C -e your.exe address\n");
+    fprintf(fh, "\n");                                                                  
+    fprintf(fh, "For addresses in a shared library :\n");
+    fprintf(fh, "    addr2line -i -f -C -e your.so  offset\n");
+    fprintf(fh, "\n");                                                                  
+    fprintf(fh, "Ensure -g is used for compilation and linking.\n");
     fprintf(fh,"-----------------------------------------------------------------\n");
     for (i=0; i<profile_block; i++)
     {
+        if (i >= max_reported_stacks) break;
         k = profile_sorted_index[i];
-        if (profile_elapsed_time[i] > 1.0e-3)
-        {
-           fprintf(fh, " \ncommunication time = %.3f sec, call site address = %#10.8x\n",
-                   profile_elapsed_time[i], profile_callsite[k]);
+//      if (profile_elapsed_time[i] > 1.0e-3)
+//      {
+           fprintf(fh, " \ntime in MPI routines = %.3f sec, call stack index = %d\n", profile_elapsed_time[i], k);
+           fprintf(fh, "call stack:\n");
+           for (j=0; j<max_stack_depth; j++)
+           {
+              address = (void *) profile_stack[k][j];
+              rc = dladdr(address, &dlinfo);
+              if (rc != 0) 
+              {
+                 if (dlinfo.dli_fname != NULL)
+                 {
+                    location = (long) address;
+                    offset   = (long) (address - dlinfo.dli_fbase);
+                    fprintf(fh, "  filename = %s\n", dlinfo.dli_fname); 
+                    fprintf(fh, "    address = %#18.16lx,  offset  = %#10.8lx\n", location, offset);
+                 }
+                 else fprintf(fh, "  filename is unknown\n");
+              }
+           }
            fprintf(fh, "   MPI Routine                  #calls        time(sec)\n");
            for (id=0; id<MAX_IDS; id++)
            {
-               if (profile_call_count[k][id] > 0LL)
+               if (profile_call_count[k][id] > 0L)
                {
-                   fprintf(fh, "   %-22s %12lld    %12.3f\n",
-                           label[id], profile_call_count[k][id], profile_callsite_time[k][id]);
+                   fprintf(fh, "   %-22s %12ld    %12.3f\n",
+                           label[id], profile_call_count[k][id], profile_function_time[k][id]);
                }
            }
-        }
+//      }
     }
     fprintf(fh, "\n");
 
@@ -916,7 +962,7 @@ static void print_profile_by_call_site(FILE * fh)
 
 static void write_profile_data(void)
 {
-   int i, k, rc, id, bin, myrank, print_summary;
+   int i, j, k, rc, id, bin, myrank, print_summary;
    double total_comm, total_count, avg_bytes, avg_size, current_time;
    unsigned int min_size, max_size;
    struct timeval TV;
@@ -957,9 +1003,9 @@ static void write_profile_data(void)
                        int rank;
                     };
    struct maxStruct my_mem, max_mem, my_elapsed, max_elapsed;
-   char sformat[] = "%-28s %12lld    %11.1f   %12.3f\n";
-   char pformat[] = "   %-28s %12lld    %11.1f   %12.3f\n";
-   char dformat[] = "                    %12lld   %11.1f   %12.3f\n";
+   char sformat[] = "%-28s %12ld    %11.1f   %12.3f\n";
+   char pformat[] = "   %-28s %12ld    %11.1f   %12.3f\n";
+   char dformat[] = "                    %12ld   %11.1f   %12.3f\n";
 
    /*--------------------------------------------------------*/
    /* stop the timers if summary collection is still enabled */
@@ -1005,7 +1051,7 @@ static void write_profile_data(void)
    total_comm = 0.0;
    for (id=0; id<MIN_MPI_IO_ID; id++)
    {
-     if (event_count[id] > 0LL)
+     if (event_count[id] > 0L)
      {
        total_comm += total_time[id];
      }
@@ -1020,7 +1066,7 @@ static void write_profile_data(void)
    mpi_io_routines_called = 0;
    for (id=MIN_MPI_IO_ID; id<MAX_IDS; id++)
    {
-     if (event_count[id] > 0LL)
+     if (event_count[id] > 0L)
      {
        mpi_io_time += total_time[id];
        mpi_io_routines_called ++;
@@ -1164,7 +1210,7 @@ static void write_profile_data(void)
       fprintf(fh,"-----------------------------------------------------------------------\n");
       for (id=0; id<MAX_IDS; id++)
       {
-        if (event_count[id] > 0LL)
+        if (event_count[id] > 0L)
         {
           avg_bytes = total_bytes[id] / ((double) event_count[id]);
           fprintf(fh,sformat, label[id], event_count[id], avg_bytes, total_time[id]);
@@ -1201,12 +1247,12 @@ static void write_profile_data(void)
          fprintf(fh,"Message size distributions:\n\n");
       for (id=0; id<MAX_IDS; id++)
       {
-        if ( event_count[id] > 0LL  &&  total_bytes[id] > 0.0 )
+        if ( event_count[id] > 0L  &&  total_bytes[id] > 0.0 )
         {
           fprintf(fh,"%-22s    #calls    avg. bytes      time(sec)\n", label[id]);
           for (bin=0; bin<MAX_BINS; bin++)
           {
-            if (bin_count[id][bin] > 0LL)
+            if (bin_count[id][bin] > 0L)
             {
               avg_bytes = bin_bytes[id][bin] / ((double) bin_count[id][bin] );
               fprintf(fh,dformat, bin_count[id][bin], avg_bytes, bin_time[id][bin]);
@@ -1239,7 +1285,7 @@ static void write_profile_data(void)
                fprintf(fh,"   MPI Routine                        #calls      avg. bytes      time(sec)\n");
                for (id=0; id<MAX_IDS; id++)
                {
-                 if ( comm_count[id][bin] > 0LL )
+                 if ( comm_count[id][bin] > 0L )
                  {
                     total_comm += comm_time[id][bin];
                     if (comm_bytes[id][bin] < 0.0) avg_bytes = 0.0;
@@ -1253,7 +1299,7 @@ static void write_profile_data(void)
          fprintf(fh,"\n");
       }
 
-      if (profile_by_call_site) print_profile_by_call_site(fh);
+      if (profile_by_call_stack) print_profile_by_call_stack(fh);
 
       if (myrank==0 && print_summary)
       {
@@ -1532,9 +1578,9 @@ static void write_profile_data_myrank(void)
                        int rank;
                     };
    struct maxStruct my_mem, max_mem, my_elapsed, max_elapsed;
-   char sformat[] = "%-28s %12lld    %11.1f   %12.3f\n";
-   char pformat[] = "   %-28s %12lld    %11.1f   %12.3f\n";
-   char dformat[] = "                    %12lld   %11.1f   %12.3f\n";
+   char sformat[] = "%-28s %12ld    %11.1f   %12.3f\n";
+   char pformat[] = "   %-28s %12ld    %11.1f   %12.3f\n";
+   char dformat[] = "                    %12ld   %11.1f   %12.3f\n";
 
    /*--------------------------------------------------------*/
    /* stop the timers if summary collection is still enabled */
@@ -1582,7 +1628,7 @@ static void write_profile_data_myrank(void)
    total_comm = 0.0;
    for (id=0; id<MIN_MPI_IO_ID; id++)
    {
-     if (event_count[id] > 0LL)
+     if (event_count[id] > 0L)
      {
        total_comm += total_time[id];
      }
@@ -1597,7 +1643,7 @@ static void write_profile_data_myrank(void)
    mpi_io_routines_called = 0;
    for (id=MIN_MPI_IO_ID; id<MAX_IDS; id++)
    {
-     if (event_count[id] > 0LL)
+     if (event_count[id] > 0L)
      {
        mpi_io_time += total_time[id];
        mpi_io_routines_called ++;
@@ -1653,7 +1699,7 @@ static void write_profile_data_myrank(void)
       fprintf(fh,"-----------------------------------------------------------------------\n");
       for (id=0; id<MAX_IDS; id++)
       {
-        if (event_count[id] > 0LL)
+        if (event_count[id] > 0L)
         {
           avg_bytes = total_bytes[id] / ((double) event_count[id]);
           fprintf(fh,sformat, label[id], event_count[id], avg_bytes, total_time[id]);
@@ -1684,12 +1730,12 @@ static void write_profile_data_myrank(void)
          fprintf(fh,"Message size distributions:\n\n");
       for (id=0; id<MAX_IDS; id++)
       {
-        if ( event_count[id] > 0LL  &&  total_bytes[id] > 0.0 )
+        if ( event_count[id] > 0L  &&  total_bytes[id] > 0.0 )
         {
           fprintf(fh,"%-22s    #calls    avg. bytes      time(sec)\n", label[id]);
           for (bin=0; bin<MAX_BINS; bin++)
           {
-            if (bin_count[id][bin] > 0LL)
+            if (bin_count[id][bin] > 0L)
             {
               avg_bytes = bin_bytes[id][bin] / ((double) bin_count[id][bin] );
               fprintf(fh,dformat, bin_count[id][bin], avg_bytes, bin_time[id][bin]);
@@ -1722,7 +1768,7 @@ static void write_profile_data_myrank(void)
                fprintf(fh,"   MPI Routine                        #calls      avg. bytes      time(sec)\n");
                for (id=0; id<MAX_IDS; id++)
                {
-                 if ( comm_count[id][bin] > 0LL )
+                 if ( comm_count[id][bin] > 0L )
                  {
                     total_comm += comm_time[id][bin];
                     if (comm_bytes[id][bin] < 0.0) avg_bytes = 0.0;
@@ -1736,7 +1782,7 @@ static void write_profile_data_myrank(void)
          fprintf(fh,"\n");
       }
 
-      if (profile_by_call_site) print_profile_by_call_site(fh);
+      if (profile_by_call_stack) print_profile_by_call_stack(fh);
 
       if (fh != stderr) fclose(fh);
 
@@ -1780,4 +1826,18 @@ static void write_profile_data_myrank(void)
    }
 
    return;
+}
+
+static inline unsigned int fletcher32(const uint16_t *data, int len)
+{
+    unsigned int c0 = 0, c1 = 0;
+    int i;
+
+    for (i = 0; i < len; ++i) {
+        c0 = c0 + *data++;
+        c1 = c1 + c0;
+    }
+    c0 = c0 % 65535;
+    c1 = c1 % 65535;
+    return (c1 << 16 | c0);
 }

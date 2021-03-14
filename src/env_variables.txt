@@ -17,10 +17,11 @@ export PROFILE_BEGIN_TIME=500; export PROFILE_END_TIME=520
 Defines a time window for collection of profile data.  Units are seconds after the program calls 
 MPI_Init().  When using time window profiling, the user should also set SAVE_LIST.
 
-export PROFILE_BY_CALL_SITE=yes 
-This option tags each MPI call with its instruction address in the program text section of the 
-executable file.  The output will then show MPI profile data for each distinct call site in the 
-code.
+export PROFILE_BY_CALL_STACK=yes 
+This option tags each MPI call with a section of the call stack, to aid association of time    
+consuming MPI calls with source code.  The output will show a list of the most expensive MPI
+calls, along with their call stacks.  Use the GNU addr2line utility to translate from address
+to source file and line number.
 
 export PROFILE_BY_COMMUNICATOR=yes 
 Separately reports MPI calls in buckets based on the size of the communicator.

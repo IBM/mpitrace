@@ -4,13 +4,13 @@
 
    for (id=0; id<MAX_IDS; id++)
    {
-      event_count[id] = 0LL;
+      event_count[id] = 0L;
       total_time[id]  = 0.0;
       total_bytes[id] = 0.0;
 
       for(bin=0; bin<MAX_BINS; bin++) 
       {
-         bin_count[id][bin] = 0LL;
+         bin_count[id][bin] = 0L;
          bin_bytes[id][bin] = 0.0;
          bin_time[id][bin]  = 0.0;
       }

@@ -211,7 +211,7 @@
       {
          for (bin=0; bin<MAX_BINS; bin++)
          {
-            comm_count[id][bin] = 0LL;
+            comm_count[id][bin] = 0L;
             comm_bytes[id][bin] = 0.0;
             comm_time[id][bin]  = 0.0;
          }
@@ -281,23 +281,56 @@
       }
    }
 
-   ptr = getenv("PROFILE_BY_CALL_SITE");
-   if (ptr == NULL) profile_by_call_site = 0;
+   ptr = getenv("PROFILE_BY_CALL_STACK");
+   if (ptr == NULL) profile_by_call_stack = 0;
    else if (strncasecmp(ptr,"yes",3) == 0)
    {
-        profile_by_call_site = 1;
+        profile_by_call_stack = 1;
    }
-   else profile_by_call_site = 0;
+   else profile_by_call_stack = 0;
 
-   for (i=0; i<MAX_PROFILE_BLOCKS; i++)
+   ptr = getenv("MAX_PROFILE_BLOCKS");
+   if (ptr == NULL)                        max_profile_blocks = 10000;
+   else if (strncasecmp(ptr,"yes",3) == 0) max_profile_blocks = atoi(ptr);
+
+   ptr = getenv("MAX_STACK_DEPTH");
+   if (ptr == NULL)                        max_stack_depth = 4;
+   else if (strncasecmp(ptr,"yes",3) == 0) max_stack_depth = atoi(ptr);
+
+   ptr = getenv("MAX_REPORTED_STACKS");
+   if (ptr == NULL)                        max_reported_stacks = 50;
+   else if (strncasecmp(ptr,"yes",3) == 0) max_reported_stacks = atoi(ptr);
+
+   if (profile_by_call_stack)
    {
-       profile_elapsed_time[i] = 0.0;
+      profile_elapsed_time = (double *) malloc(max_profile_blocks*sizeof(double));
 
-       for (id=0; id<MAX_IDS; id++)
-       {
-           profile_call_count[i][id] = 0LL;
-           profile_callsite_time[i][id] = 0.0;
-       }
+      profle_key = (int *) malloc(max_profile_blocks*sizeof(int));
+
+      profile_stack = (long **) malloc(max_profile_blocks*sizeof(long *));
+      profile_stack[0] = (long *) malloc(max_profile_blocks*max_stack_depth*sizeof(long));
+      for (i=1; i<max_profile_blocks; i++) profile_stack[i] = profile_stack[0] + i*max_stack_depth;
+
+      profile_call_count = (long **) malloc(max_profile_blocks*sizeof(long *));
+      profile_call_count[0] = (long *) malloc(max_profile_blocks*MAX_IDS*sizeof(long));
+      for (i=1; i<max_profile_blocks; i++) profile_call_count[i] = profile_call_count[0] + i*MAX_IDS;
+
+      profile_function_time = (double **) malloc(max_profile_blocks*sizeof(double *));
+      profile_function_time[0] = (double *) malloc(max_profile_blocks*MAX_IDS*sizeof(double));
+      for (i=1; i<max_profile_blocks; i++) profile_function_time[i] = profile_function_time[0] + i*MAX_IDS;
+
+      for (i=0; i<max_profile_blocks; i++)
+      {
+          profile_elapsed_time[i] = 0.0;
+
+          for (j=0; j<max_stack_depth; j++) profile_stack[i][j] = 0L;
+
+          for (id=0; id<MAX_IDS; id++)
+          {
+              profile_call_count[i][id] = 0L;
+              profile_function_time[i][id] = 0.0;
+          }
+      }
    }
 
    /* option to set a traceback level */

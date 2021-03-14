@@ -12,7 +12,7 @@ compiler is gcc.  If both checks pass, the script copies "makefile.in" to "makef
 "make" should build the wrapper library.  By using your system's gcc compiler, the resulting
 libmpitrace.so should be compatible with all other compilers on your system, and it should
 work with the version of MPI associated with mpicc.  The configure script is intended as a
-conveinence, but it may not handle all environments, in which case you can copy makefile.in
+convenience, but it may not handle all environments, in which case you can copy makefile.in
 to makefile, edit the makefile and set options and paths for your system.  You can optionally
 specify the name of your MPI C compiler, see ./configure --help for specifics.
 
@@ -141,21 +141,29 @@ utility directory.  Tracking communication patterns will add some overhead to th
 ================================================================================================ 
 Associating MPI calls with source file / line-number :
 
-You can optionally associate MPI calls with their call site in the application by setting an
+You can optionally associate MPI calls with their call stack in the application by setting an
 environment variable :
 
-export PROFILE_BY_CALL_SITE=yes
+export PROFILE_BY_CALL_STACK=yes
 
 For this to be effective, you need -g as a compile option when you build your code.  When this
-option is enabled, the MPI wrapper library saves the instruction address for every MPI call,
+option is enabled, the MPI wrapper library saves a section of the call stack for every MPI call,
 and prints that information in the mpi_profile outputs.  You will need to use the GNU addr2line
-utility to translate from instruction address to source file and line number.  You can do this
-one address at a time, or all in one shot :
+utility to translate from instruction address to source file and line number.  The method for 
+this depends on whether the address is in a shared library, or in the executable file :
 
-grep "site address" mpi_profile.jobid.rank | awk '{print $10}' | addr2line -e your.exe
+For addresses in the executable file :
+    addr2line -f -C -e your.exe address
 
-Sometimes you might want to track the address one or more levels up the call stack, instead of
-the specific call site for the MPI function.  You can do that with an environment variable :
+For addresses in a shared library :
+    addr2line -f -C -e your.so  offset
+
+The mpi_profile outputs will list the executable for or shared library for each instruction in
+the stack, along with the address and offset values.
+
+Sometimes you might want to track the address starting one or more levels up the call stack, 
+instead of starting at the specific call site for the MPI function.  You can do that with an 
+environment variable :
 
 export TRACEBACK_LEVEL=1  (or 2, or 3, etc.)
 

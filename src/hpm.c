@@ -51,8 +51,8 @@ static int local_rank = 0;
 #pragma weak hpm_init=HPM_Init
 #pragma weak hpm_print=HPM_Print
 
-static long long counter_in[MAX_CODE_BLOCKS][NUM_COUNTERS];
-static long long counter_sum[MAX_CODE_BLOCKS][NUM_COUNTERS];
+static long counter_in[MAX_CODE_BLOCKS][NUM_COUNTERS];
+static long counter_sum[MAX_CODE_BLOCKS][NUM_COUNTERS];
 static int block_starts[MAX_CODE_BLOCKS];
 static int block_stops[MAX_CODE_BLOCKS];
 static double elapsed_in[MAX_CODE_BLOCKS];
@@ -120,7 +120,7 @@ void HPM_Init(void)
    }
 
    for (j=0; j<MAX_CODE_BLOCKS; j++) {
-      for (ic=0; ic<numcounters; ic++) counter_sum[j][ic] = 0LL;
+      for (ic=0; ic<numcounters; ic++) counter_sum[j][ic] = 0L;
    }
 
    // set HPM_GROUP to make all ranks count using the same group
@@ -267,7 +267,7 @@ void HPM_Reset(char * this_label)
    block_stops[j] = 0;
    elapsed_sum[j] = 0.0;
 
-   for (ic=0; ic<NUM_COUNTERS; ic++) counter_sum[j][ic] = 0LL;
+   for (ic=0; ic<NUM_COUNTERS; ic++) counter_sum[j][ic] = 0L;
    
 }
 
@@ -287,7 +287,7 @@ void hpm_reset(char * f_label, int length)
    block_stops[j] = 0;
    elapsed_sum[j] = 0.0;
 
-   for (ic=0; ic<NUM_COUNTERS; ic++) counter_sum[j][ic] = 0LL;
+   for (ic=0; ic<NUM_COUNTERS; ic++) counter_sum[j][ic] = 0L;
    
 }
 
@@ -347,7 +347,7 @@ void HPM_Stop(char * this_label)
 {
    int ic, rc, j;
    struct timeval tv;
-   long long values[NUM_COUNTERS];
+   long values[NUM_COUNTERS];
 
    if (disabled || !initialized) return;
 
@@ -375,7 +375,7 @@ void hpm_stop(char * f_label, int length)
 {
    int ic, rc, j;
    struct timeval tv;
-   long long values[NUM_COUNTERS];
+   long values[NUM_COUNTERS];
    char this_label[LABEL_LEN];
 
    if (disabled || !initialized) return;
@@ -411,7 +411,7 @@ void HPM_Print(void)
     int j, ic, rank, indx;
     int nblocks, max_nblocks;
     int * all_ranks;
-    long long * all_counts;
+    long * all_counts;
     double * all_elapsed;
     FILE * fp;
     char filename[256], counter_label[256];
@@ -517,7 +517,7 @@ void HPM_Print(void)
 
           if (collect_all_counts == 1) {
              if (report_rank == 0)  {
-                all_counts = (long long *) malloc(report_size*numcounters*sizeof(long long));
+                all_counts = (long *) malloc(report_size*numcounters*sizeof(long));
                 all_ranks = (int *)        malloc(report_size*sizeof(int));
                 all_elapsed = (double *) malloc(report_size*sizeof(double));
              }
@@ -542,7 +542,7 @@ void HPM_Print(void)
                 for (rank=0; rank<report_size; rank++) {
                    indx = rank*numcounters;
                    fprintf(fp, "%-10d   %12.3lf  ", all_ranks[rank], all_elapsed[rank]);
-                   for (ic=0; ic<numcounters; ic++) fprintf(fp, "%14lld  ", all_counts[indx+ic]);
+                   for (ic=0; ic<numcounters; ic++) fprintf(fp, "%14ld  ", all_counts[indx+ic]);
                    fprintf(fp, "\n");
                 }
              }
@@ -602,7 +602,7 @@ void HPM_Print(void)
              memset(counter_label, '\0', sizeof(counter_label));
              if (use_event_list) sprintf(counter_label, "%s", envname[ic]);
              else                sprintf(counter_label, "(%s) %s", CounterGroup[group].event[ic].name, CounterGroup[group].event[ic].label);
-             fprintf(fp, "%15lld : %s\n", counter_sum[j][ic], counter_label);
+             fprintf(fp, "%15ld : %s\n", counter_sum[j][ic], counter_label);
           }
        }
        else {
@@ -659,7 +659,7 @@ void HPM_Print_myrank(int jobid, int add_timestamp, char * timestamp, int flag)
              memset(counter_label, '\0', sizeof(counter_label));
              if (use_event_list) sprintf(counter_label, "%s", envname[ic]);
              else                sprintf(counter_label, "(%s) %s", CounterGroup[group].event[ic].name, CounterGroup[group].event[ic].label);
-             fprintf(fp, "%15lld : %s\n", counter_sum[j][ic], counter_label);
+             fprintf(fp, "%15ld : %s\n", counter_sum[j][ic], counter_label);
           }
        }
        else {
