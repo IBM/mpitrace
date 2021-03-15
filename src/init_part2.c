@@ -305,7 +305,7 @@
    {
       profile_elapsed_time = (double *) malloc(max_profile_blocks*sizeof(double));
 
-      profle_key = (int *) malloc(max_profile_blocks*sizeof(int));
+      profile_key = (int *) malloc(max_profile_blocks*sizeof(int));
 
       profile_stack = (long **) malloc(max_profile_blocks*sizeof(long *));
       profile_stack[0] = (long *) malloc(max_profile_blocks*max_stack_depth*sizeof(long));

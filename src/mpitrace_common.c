@@ -845,7 +845,7 @@ int index_from_key(unsigned int key)
           i = profile_fifo[k];
           if (i >= 0)
           {
-              if (key == profle_key[i])
+              if (key == profile_key[i])
               {
                   match = 1;
                   break;
@@ -861,7 +861,7 @@ int index_from_key(unsigned int key)
    /*-------------------------------------------------------*/
    for (i=0; i<profile_block; i++)
    {
-       if (key == profle_key[i])
+       if (key == profile_key[i])
        {
            match = 1;
            break;
@@ -874,7 +874,7 @@ int index_from_key(unsigned int key)
    if (match == 0)
    {
        i = profile_block;
-       profle_key[i] = key;
+       profile_key[i] = key;
        profile_block ++;
    }
 

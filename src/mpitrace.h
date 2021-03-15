@@ -159,7 +159,7 @@ static int profile_by_call_stack= 0;
 static int profile_fifo[FIFO_DEPTH];
 static long ** profile_stack;
 static long ** profile_call_count;
-static unsigned int * profle_key;
+static unsigned int * profile_key;
 static double * profile_elapsed_time;
 static double ** profile_function_time;
 
