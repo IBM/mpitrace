@@ -15,3 +15,14 @@ and bytes sent to every connected destination rank.  The binary input
 file contains information from only those MPI calls that have a 
 specific destination rank as a call argument, i.e. some form of send
 operation.  Collective MPI operations and receives are not included.
+
+When using PROFILE_BY_CALL_STACK=yes, the mpi_profile outputs contain
+instruction addresses for a section of the call stack, for the most
+expensive MPI calls.  The translate.py utility is a python3 script that
+uses GNU addr2line to translate addresses and print the function name,
+source file and line number.  Syntax :
+
+  translate.py mpi_profile.jobid.rank >output.txt
+
+One should include -g as an option for compilation and linking, to
+ensure that addr2line can properly translate addresses.  

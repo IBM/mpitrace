@@ -912,10 +912,10 @@ static void print_profile_by_call_stack(FILE * fh)
     fprintf(fh, "Use addr2line to map addresses to source file and line number.\n");
     fprintf(fh, "\n");                                                                  
     fprintf(fh, "For addresses in the executable file :\n");
-    fprintf(fh, "    addr2line -i -f -C -e your.exe address\n");
+    fprintf(fh, "    addr2line -f -C -e your.exe address\n");
     fprintf(fh, "\n");                                                                  
     fprintf(fh, "For addresses in a shared library :\n");
-    fprintf(fh, "    addr2line -i -f -C -e your.so  offset\n");
+    fprintf(fh, "    addr2line -f -C -e your.so  offset\n");
     fprintf(fh, "\n");                                                                  
     fprintf(fh, "Ensure -g is used for compilation and linking.\n");
     fprintf(fh,"-----------------------------------------------------------------\n");

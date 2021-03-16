@@ -158,8 +158,10 @@ For addresses in the executable file :
 For addresses in a shared library :
     addr2line -f -C -e your.so  offset
 
-The mpi_profile outputs will list the executable for or shared library for each instruction in
-the stack, along with the address and offset values.
+The mpi_profile outputs will list the executable or shared library for each instruction in
+the stack, along with the address and offset values.  Instead of manually translating the
+addresses as described above, you can use a python3 script, translate.py, included in the
+util directory.  The syntax is : translate.py mpi_profile.jobid.rank >output.txt.
 
 Sometimes you might want to track the address starting one or more levels up the call stack, 
 instead of starting at the specific call site for the MPI function.  You can do that with an 
