@@ -917,6 +917,7 @@ static void print_profile_by_call_stack(FILE * fh)
     fprintf(fh, "For addresses in a shared library :\n");
     fprintf(fh, "    addr2line -f -C -e your.so  offset\n");
     fprintf(fh, "\n");                                                                  
+    fprintf(fh, "Or translate all addresses using: translate.py mpi_profile.jobid.rank >out.txt.\n");
     fprintf(fh, "Ensure -g is used for compilation and linking.\n");
     fprintf(fh,"-----------------------------------------------------------------\n");
     for (i=0; i<profile_block; i++)
