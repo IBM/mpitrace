@@ -459,7 +459,8 @@ void get_stack(int level, unsigned int * key, long * stack)
 
   ptr = (const uint16_t *) &profile_stack[profile_block][0];
 
-  len = max_stack_depth*sizeof(long);
+  // the number of uint16_t items = size in bytes / 2
+  len = max_stack_depth*sizeof(long) / 2;
 
   *key = fletcher32(ptr, len);
 
@@ -1835,7 +1836,7 @@ static inline unsigned int fletcher32(const uint16_t *data, int len)
     int i;
 
     for (i = 0; i < len; ++i) {
-        c0 = c0 + *data++;
+        c0 = c0 + data[i];
         c1 = c1 + c0;
     }
     c0 = c0 % 65535;
