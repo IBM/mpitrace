@@ -171,7 +171,7 @@ void mpi_file_write_shared(int* fh, void * buf, int * count, int * type, int * s
 /*----------------------------------------------------------*/
 void mpi_init(int * info)
 {
-   int i, j, id, rc, bin, argc, namelen;
+   int i, j, id, rc, bin, argc, hostlen;
    unsigned int limit;
    struct rusage RU;
    struct timeval TV;
@@ -202,7 +202,7 @@ void mpi_init(int * info)
 #ifdef HAS_INIT_THREAD
 void mpi_init_thread(int * required, int * provided, int * info)
 {
-   int i, j, id, rc, bin, argc, namelen;
+   int i, j, id, rc, bin, argc, hostlen;
    unsigned int limit;
    struct rusage RU;
    struct timeval TV;

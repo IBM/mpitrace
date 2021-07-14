@@ -45,6 +45,10 @@
        }
    }
 
+   hostlen = strlen(host);
+   PMPI_Allreduce(&hostlen, &maxlen, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+   maxlen += 2;
+
    PMPI_Allgather(host, sizeof(host), MPI_BYTE, hostnames, sizeof(host), MPI_BYTE, MPI_COMM_WORLD);
 
    /*-----------------------------------------*/

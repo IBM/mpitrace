@@ -18,7 +18,7 @@
 /*----------------------------------------------------------*/
 int MPI_Init(int * argc, char *** argv)
 {
-   int i, j, id, rc, rcinit, bin, namelen;
+   int i, j, id, rc, rcinit, bin, hostlen;
    unsigned int limit;
    struct timeval TV;
    struct rusage RU;
@@ -47,7 +47,7 @@ int MPI_Init(int * argc, char *** argv)
 #ifdef HAS_INIT_THREAD
 int MPI_Init_thread(int * argc, char *** argv, int required, int * provided)
 {
-   int i, j, id, rc, rcinit, bin, namelen;
+   int i, j, id, rc, rcinit, bin, hostlen;
    unsigned int limit;
    struct timeval TV;
    struct rusage RU;

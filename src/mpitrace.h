@@ -91,6 +91,7 @@ static int swap_bytes = 0;  /* default value for swap_bytes */
 #else
 static int swap_bytes = 1;  /* default value for swap_bytes */
 #endif
+static int maxlen;
 static int collect_summary = 1;
 static int first_summary_start = 1;
 static int summary_start_count = 0;

@@ -1005,6 +1005,7 @@ static void write_profile_data(void)
                        int rank;
                     };
    struct maxStruct my_mem, max_mem, my_elapsed, max_elapsed;
+   char tformat[160], hfmt[32], heading[160];
    char sformat[] = "%-28s %12ld    %11.1f   %12.3f\n";
    char pformat[] = "   %-28s %12ld    %11.1f   %12.3f\n";
    char dformat[] = "                    %12ld   %11.1f   %12.3f\n";
@@ -1305,6 +1306,11 @@ static void write_profile_data(void)
 
       if (myrank==0 && print_summary)
       {
+         sprintf(tformat, "%%6d %%%ds %%6d %%10.2lf  %%10.2lf  %%10.2lf  %%10.2lf  %%10.2lf  %%10ld", maxlen);
+         strcat(tformat, "\n");
+         sprintf(hfmt, "%%s %%%ds", maxlen);
+         sprintf(heading, hfmt, "taskid", "host");
+         strcat(heading, "    cpu    comm(s)  elapsed(s)     user(s)   system(s)   size(MiB)    switches\n");
          fprintf(fh,"-----------------------------------------------------------------\n");
          fprintf(fh, "\nSummary for all tasks:\n");
          fprintf(fh, "\n");
@@ -1336,17 +1342,14 @@ static void write_profile_data(void)
             }
             fprintf(fh, "\n\n");
          }
-//       fprintf(fh, "MPI tasks sorted by communication time:\n");
          fprintf(fh, "MPI timing summary for all ranks:\n");
-         fprintf(fh, "taskid           hostname    cpu    comm(s)  elapsed(s)     user(s)   system(s)   size(MiB)    switches\n");
+         fprintf(fh, heading);
          for (i=0; i<ntasks; i++)
          {
-//           k = sorted_rank[i];  // for a list sorted by comm time
-             k = i;
-             ptr = hostnames + k*sizeof(host);
-             fprintf(fh, "%6d %18s %6d %10.2lf  %10.2lf  %10.2lf  %10.2lf  %10.2lf  %10ld\n", k, ptr,
-                           all_cpus[k], all_total_comm[k], all_elapsed_time[k], all_user_time[k],
-                           all_system_time[k], all_memsizes[k], all_context_switches[k]);
+             ptr = hostnames + i*sizeof(host);
+             fprintf(fh, tformat, i, ptr,
+                     all_cpus[i], all_total_comm[i], all_elapsed_time[i], all_user_time[i],
+                     all_system_time[i], all_memsizes[i], all_context_switches[i]);
          }
       }
    
