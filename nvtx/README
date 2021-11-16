@@ -76,3 +76,9 @@ in fact source code access is not required at all.  The libmpitrace.so
 library can track the time that has elapsed after MPI_Init() when every 
 MPI function is called, and start and stop CUDA profiling as directed
 via environment variables.
+
+To add nvtx annotations, do the following steps :
+  grep Log ref_mpitrace.c | awk -F"(" '{print $2}' | awk -F"," '{print $1}' >cids.txt
+  grep Log ref_fortran_wrappers.c | awk -F"(" '{print $2}' | awk -F"," '{print $1}' >fids.txt
+  gcc -g add_nvtx.c -o add_nvtx
+  ./add_nvtx

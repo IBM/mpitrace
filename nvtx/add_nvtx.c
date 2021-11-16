@@ -6,6 +6,7 @@
 // and add nvtx labeled ranges for all 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 int main(int argc, char * argv[])
@@ -43,8 +44,8 @@ int main(int argc, char * argv[])
      exit(0);
    }
 
-   // echo 90 lines
-   for (i=0; i<90; i++) {
+   // echo 103 lines
+   for (i=0; i<103; i++) {
       ptr = fgets(line, sizeof(line), srcfile);
       if (ptr != NULL) fprintf(ofile, "%s", line);
    }
@@ -53,7 +54,7 @@ int main(int argc, char * argv[])
    while (NULL != fgets(line, sizeof(line), srcfile) ) {
       // check to see if the line contains "struct timeval" or LogEvent
       tvp = strstr(line, "struct timeval");
-      logp = strstr(line, "LogEvent");
+      logp = strstr(line, "Log");
       if (tvp != NULL) {
          sprintf(addline, "   nvtxRangeId_t range = nvtxRangeStartA(label[%s]);\n", idname[j]);
          str = strcat(line, addline);
@@ -75,7 +76,7 @@ int main(int argc, char * argv[])
    // now instrument Fortran wrappers
    idfile = fopen("fids.txt", "r");
    if (idfile == NULL) {
-     printf("can't open cids.txt ... exiting\n");
+     printf("can't open fids.txt ... exiting\n");
      exit(0);
    }
 
@@ -95,8 +96,8 @@ int main(int argc, char * argv[])
      exit(0);
    }
 
-   // echo 246 lines for fortran_wrappers.c
-   for (i=0; i<246; i++) {
+   // echo 260 lines for fortran_wrappers.c
+   for (i=0; i<260; i++) {
       ptr = fgets(line, sizeof(line), srcfile);
       if (ptr != NULL) fprintf(ofile, "%s", line);
    }
@@ -105,7 +106,7 @@ int main(int argc, char * argv[])
    while (NULL != fgets(line, sizeof(line), srcfile) ) {
       // check to see if the line contains "struct timeval" or LogEvent
       tvp = strstr(line, "struct timeval");
-      logp = strstr(line, "LogEvent");
+      logp = strstr(line, "Log");
       if (tvp != NULL) {
          sprintf(addline, "   nvtxRangeId_t range = nvtxRangeStartA(label[%s]);\n", idname[j]);
          str = strcat(line, addline);
