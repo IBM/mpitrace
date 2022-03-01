@@ -228,12 +228,7 @@ static void annotate(char * obj_file, int numpc)
 
    jstart = 0;
    for (i=0; i<numpc; i++) {
-#if defined(__x86_64__) || defined(__aarch64__)
-      if (0x00000000F0000000 | histo[i].pc == 0L) sprintf(address, "0000000000%lx", histo[i].pc);
-      else                                        sprintf(address, "000000000%lx", histo[i].pc);
-#else
-      sprintf(address, "00000000%lx", histo[i].pc);
-#endif
+      sprintf(address, "%016lx", histo[i].pc);
       // now find the line in the objdump that matches the address
       for (j=jstart; j<numlines; j++) {
         if (strncmp(filebuf + linepos[j], address, 16) == 0) {

@@ -160,6 +160,8 @@ if [ $binutils_flag == 1 ]; then
     echo -n testing for libiberty.a...
     if [ -f $binutils_path/lib64/libiberty.a ]; then
       echo found
+    elif [ -f $binutils_path/lib/libiberty.a ]; then
+      echo found
     else
       echo libiberty.a not found ... check your binutils path ... exiting
       exit
