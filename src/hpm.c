@@ -51,6 +51,9 @@ static int local_rank = 0;
 #pragma weak hpm_init=HPM_Init
 #pragma weak hpm_print=HPM_Print
 
+#pragma weak hpm_init_=HPM_Init
+#pragma weak hpm_print_=HPM_Print
+
 static long counter_in[MAX_CODE_BLOCKS][NUM_COUNTERS];
 static long counter_sum[MAX_CODE_BLOCKS][NUM_COUNTERS];
 static int block_starts[MAX_CODE_BLOCKS];

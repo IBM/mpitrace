@@ -1,7 +1,7 @@
 PAPI_INC = -I PAPI_INSTALL_PATH/include
 PAPI_OBJ = PAPI_INSTALL_PATH/lib/libpapi.a
 
-all : libhpm.a libhpm.so check_event_list
+all : libhpm.so check_event_list  #libhpm.a
 	
 
 libhpm.a : hpm.o
