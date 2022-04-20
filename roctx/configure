@@ -1,0 +1,190 @@
+#!/bin/bash 
+
+#parse command arguments
+config_args=$(/usr/bin/getopt -n $0 -l "help,with-mpicc:,with-rocm:,with-fortran" -o "hw:c:f:" -- "$@")
+
+if [ $? -ne 0 ]; then
+  echo check arguments :  ./configure --help
+  exit
+fi
+
+eval set -- "$config_args"
+
+rocm_flag=0
+mpicc_flag=0
+fortran_flag=1
+
+while true 
+do
+  case "$1" in
+    -h|--help)
+     echo "configure options :"
+     echo "--help  (prints this help message)"
+     echo "--with-mpicc=your_mpi_compiler (needed only if your MPI compiler is not mpicc or Cray cc)"
+     echo "--with-rocm=/path/to/rocm  (required and must have sub-directories : lib,include)"
+     echo "--with-fortran=[yes|no]  (default is \"yes\", specify \"no\" to wrap only the C interfaces to MPI)"
+     exit;;
+  
+    -w|--with-mpicc)
+     mpicc_flag=1
+     mpi_compiler="$2"
+     if [ ${mpi_compiler:0:2} == -- ]; then
+       echo error : optionally specify --with-mpicc=mpi_compiler ... exiting
+       exit
+     fi
+     shift 2;;
+
+    -r|--with-rocm)
+     rocm_flag=1
+     rocm_path="$2"
+     if [ ${rocm_path:0:2} == -- ]; then
+       echo error : specify --with-rocm=/path/to/rocm ... exiting
+       exit
+     fi
+     echo using rocm_path=$rocm_path
+     shift 2;;
+
+    -f|--with-fortran)
+     fortran_option="$2"
+     if [ ${fortran_option} != "no" ] && [ ${fortran_option} != "yes" ]; then
+       echo error : specify --with-fortran=yes  or --with-fortran=no ... exiting
+       exit
+     fi  
+     if [ $fortran_option == "no" ]; then
+       fortran_flag=0;
+     fi  
+     shift 2;; 
+
+    --)
+     shift
+     break;;
+  esac
+done
+
+# if the user specifies --with-mpicc=mpi_compiler, use it, else use mpicc or Cray cc
+if [ $mpicc_flag == 1 ]; then
+  MPICC=$( command -v $mpi_compiler )
+  if [ -z "$MPICC" ]; then
+    echo ensure that $mpi_compiler is in your PATH and re-run the configure script ... exiting
+    exit
+  else
+    if [ -x $MPICC ]; then
+      MPI_BINDIR=`dirname $MPICC`
+      echo found MPI C compiler = $MPICC
+      compiler=`$mpi_compiler --version | head -n 1 | cut -b 1-3`
+      if [ "$compiler" != "gcc" ]; then
+        echo please set $mpi_compiler to use gcc as the C compiler and re-run the configure script ... exiting
+        exit
+      else
+       cp makefile.in makefile
+       sed -i "s/CC = mpicc/CC = $mpi_compiler/g" makefile
+      fi  
+    else
+      echo ensure that $mpi_compiler is in your PATH and re-run the configure script ... exiting
+      exit
+    fi  
+  fi 
+else
+  if [ -z ${CRAYPE_VERSION} ]; then
+    MPICC=$( command -v mpicc )
+    if [ -z "$MPICC" ]; then
+      echo ensure that mpicc is in your PATH and re-run the configure script ... exiting
+      exit
+    elif [ -x $MPICC ]; then
+      MPI_BINDIR=`dirname $MPICC`
+      echo found mpicc = $MPICC
+      compiler=$(mpicc --version | head -n 1 | cut -b 1-3)
+      if [ "$compiler" != "gcc" ]; then
+        echo please set the mpicc command to use gcc as the C compiler and re-run the configure script
+        echo example: "export OMPI_CC=gcc; or export MPICH_CC=gcc" ... exiting
+        exit
+      else
+       cp makefile.in makefile
+      fi  
+    fi  
+  else
+    CRAYCC=$( command -v cc )
+    if [ -x $CRAYCC ]; then
+      MPI_BINDIR=`dirname $CRAYCC`
+      echo found cc = $CRAYCC
+      compiler=$(cc --version | head -n 1 | cut -b 1-3)
+      if [ "$compiler" != "gcc" ]; then
+        echo please set the cc command to use gcc as the C compiler and re-run the configure script ... exiting
+        exit
+      else
+       cp makefile.in makefile
+       sed -i "s/CC = mpicc/CC = cc/g" makefile
+      fi
+    else
+      echo ensure that cc is in your PATH and re-run the configure script ... exiting
+      exit
+    fi
+  fi
+fi
+
+#check for inclusion of Fortran MPI profiling entry points
+MPICH_CMD=$MPI_BINDIR/mpichversion
+INTELMPI_CMD=$MPI_BINDIR/impi_info
+if [ ! -z "$MPICH_CMD" ]  && [ -x $MPICH_CMD ]; then
+  fortran_flag=0;
+fi
+if [ ! -z "$INTELMPI_CMD" ] && [ -x $INTELMPI_CMD ]; then
+  fortran_flag=0;
+fi
+if [ $fortran_flag == "0" ]; then
+  sed -i "s/ FNAME = / FNAME = -DSKIP_FORTRAN/g" makefile
+fi
+
+if [ $rocm_flag == 1 ]; then
+# check for rocm components
+  if [[ ! -z $rocm_path ]]; then
+    echo -n testing for libroctracer64.so...
+    if [ -f $rocm_path/lib/libroctracer64.so ]; then
+      echo found
+    else
+      echo libroctracer64.so not found ... check your ROCm path ... exiting
+      exit
+    fi
+
+    echo -n testing for libroctx64.so...
+    if [ -f $rocm_path/lib/libroctx64.so ]; then
+      echo found
+    else
+      echo libroctx64.so not found ... check your ROCm path ... exiting
+      exit
+    fi
+
+    echo -n testing for roctracer_ext.h...
+    if [ -f $rocm_path/include/roctracer/roctracer_ext.h ]; then
+      echo found
+    else
+      echo roctracer_ext.h not found ... check your rocm path ... exiting
+      exit
+    fi
+
+    echo -n testing for roctx.h...
+    if [ -f $rocm_path/include/roctracer/roctx.h ]; then
+      echo found
+    else
+      echo roctx.h not found ... check your rocm path ... exiting
+      exit
+    fi
+
+    x_rocm_path="$(echo $rocm_path | sed 's/\//\\\//g')"
+
+    sed -i "s/ROCM_INSTALL_PATH/$x_rocm_path/g" makefile
+
+  else
+
+    echo "error  : the configure option --with-rocm  is required for ROCm support"
+    echo "example : ./configure --with-rocm=/path/to/rocm"
+    exit
+
+  fi
+
+  echo ""
+  echo "Edit makefile and ensure that the ROCm path is set correctly"
+  echo "To build the libmpitrace.so library, type : make libmpitrace.so"
+  echo ""
+fi
+

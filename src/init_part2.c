@@ -244,6 +244,17 @@
       else                                                                            cudaProfilerStop();
    }
 #endif
+#ifdef USE_ROCTX
+   if (time_window_profiling)  {
+   /* disable ROCm profiling from MPI_Init when using time window profiling */
+      roctracer_stop();
+   }
+   else {
+   /* use the TRACE* controls to start/stop cuda/nvtx profiling */
+      if ((trace_events==1) && (taskid>=trace_min_rank) && (taskid <=trace_max_rank)) roctracer_start();
+      else                                                                            roctracer_stop();
+   }
+#endif
 
    ptr = getenv("VPROF_PROFILE");
    if (ptr == NULL) vprof_profile = 0;
