@@ -16,6 +16,10 @@
 #include <cuda_profiler_api.h>
 #include <nvToolsExt.h>
 #endif
+#ifdef USE_ROCTX
+#include <roctracer_ext.h>
+#include <roctx.h>
+#endif
 #include <dlfcn.h>
 #include <stdint.h>
 
