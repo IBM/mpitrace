@@ -9,8 +9,8 @@
 # add -DHAS_INIT_THREAD if your MPI implementation supports MPI_Init_thread()
 #-------------------------------------------------------------
 CC = mpicc
-ROCM_INC = -I $(ROCM_INSTALL_PATH)/include -I $(ROCM_INSTALL_PATH)/include/roctracer
-ROCM_LIB = -L $(ROCM_INSTALL_PATH)/lib -lroctracer64 -lroctx64 -Wl,-rpath=$(ROCM_INSTALL_PATH)/lib
+ROCM_INC = -I ROCM_INSTALL_PATH/include -I ROCM_INSTALL_PATH/include/roctracer
+ROCM_LIB = -L ROCM_INSTALL_PATH/lib -lroctracer64 -lroctx64 -Wl,-rpath=ROCM_INSTALL_PATH/lib
 CFLAGS = -g -O -fPIC $(VPROF) -I. $(MPI_INC) $(ROCM_INC) -DUSE_ROCTX  -DHAS_INIT_THREAD
 
 #------------------------------------------
