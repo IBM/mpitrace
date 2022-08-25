@@ -8,9 +8,9 @@
 # normally use gcc to build the wrapper libraries
 # add -DHAS_INIT_THREAD if your MPI implementation supports MPI_Init_thread()
 #-------------------------------------------------------------
-CC = mpicc
-ROCM_INC = -I /opt/rocm-5.0.0-rel19/include -I /opt/rocm-5.0.0-rel19/include/roctracer
-ROCM_LIB = -L /opt/rocm-5.0.0-rel19/lib -lroctracer64 -lroctx64 -Wl,-rpath=/opt/rocm-5.0.0-rel19/lib
+CC = cc
+ROCM_INC = -I ROCM_INSTALL_PATH/include -I ROCM_INSTALL_PATH/include/roctracer
+ROCM_LIB = -L ROCM_INSTALL_PATH/lib -lroctracer64 -lroctx64 -Wl,-rpath=ROCM_INSTALL_PATH/lib
 CFLAGS = -g -O -fPIC $(VPROF) -I. $(MPI_INC) $(ROCM_INC) -DUSE_ROCTX  -DHAS_INIT_THREAD
 
 #------------------------------------------
