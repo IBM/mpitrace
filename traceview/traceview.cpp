@@ -83,7 +83,7 @@ int legend_window;           // window for legends
 
 int mouse_mode = MOUSE_PICKS;// default mode for the mouse
 
-int xpixels = 1280;           // initial x size of the window
+int xpixels = 1280;          // initial x size of the window
 int ypixels = 480;           // initial y size of the window
 int num_events;              // the number of events
 int num_tasks;               // the number of parallel tasks
@@ -615,7 +615,7 @@ void key(unsigned char k, int x, int y)
       break;
 
     case '<':
-      dx = -0.005*xrange;
+      dx = -0.002*xrange;
       xcenter += dx;
       xmin += dx;
       xmax += dx;
@@ -623,7 +623,7 @@ void key(unsigned char k, int x, int y)
       break;
 
     case '>':
-      dx = +0.005*xrange;
+      dx = +0.002*xrange;
       xcenter += dx;
       xmin += dx;
       xmax += dx;
