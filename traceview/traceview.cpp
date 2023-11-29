@@ -345,7 +345,7 @@ void draw(void)
   double ytop, ymid, ybot;
   double red, green, blue;
   double xpix, deltax, xsize_in_pixels, intensity;
-  double ypix, deltay, ypixels_per_rank;
+  double ypix, yscale, ysize_in_pixels;
   char xlstring[16];
   char xcstring[16];
   char xrstring[16];
@@ -366,8 +366,8 @@ void draw(void)
   ypix = (double) ypixels;
 
   // for anti-aliasing in the y dimension
-  deltay = ymax - ymin;
-  ypixels_per_rank = 10.0*ypix / deltay;
+  yscale = (ymax - ymin)/ypix;
+  ysize_in_pixels = 10.0/yscale;
 
   for (i=0; i<num_events; i++)
   {
@@ -393,16 +393,16 @@ void draw(void)
            green *= intensity;
            blue  *= intensity;
         }
-        // poor man's anti-aliasing - y dimension
-        if (ypixels_per_rank < 2.0) 
+        // poor man's anti-aliasing - y dimension 
+        if (ysize_in_pixels < 1.5) 
         {
-           y1 -= (2.0 - ypixels_per_rank);
-           y2 += (2.0 - ypixels_per_rank);
-           intensity = 0.25*(2.0 + ypixels_per_rank);
+           y1 -= 0.5*yscale*(1.5 - ysize_in_pixels);
+           y2 += 0.5*yscale*(1.5 - ysize_in_pixels);
+           intensity = 0.40*(1.0 + ysize_in_pixels);
            red   *= intensity;
            green *= intensity;
            blue  *= intensity;
-        }  
+        }
         glColor3d(red, green, blue);
         glRectd(x1, y1, x2, y2);
      }
