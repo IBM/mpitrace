@@ -83,8 +83,8 @@ int legend_window;           // window for legends
 
 int mouse_mode = MOUSE_PICKS;// default mode for the mouse
 
-int xpixels = 960;           // initial x size of the window
-int ypixels = 320;           // initial y size of the window
+int xpixels = 1280;           // initial x size of the window
+int ypixels = 480;           // initial y size of the window
 int num_events;              // the number of events
 int num_tasks;               // the number of parallel tasks
 int min_rank;                // smallest rank in the set
