@@ -394,15 +394,15 @@ void draw(void)
            blue  *= intensity;
         }
         // poor man's anti-aliasing - y dimension
-        if (ypixels_per_rank < 1.5) 
+        if (ypixels_per_rank < 2.0) 
         {
-           y1 -= 3.33*(1.5 - ypixels_per_rank)/ypixels_per_rank;
-           y2 += 3.33*(1.5 - ypixels_per_rank)/ypixels_per_rank;
-           intensity = 0.40*(1.0 + ypixels_per_rank);
+           y1 -= (2.0 - ypixels_per_rank);
+           y2 += (2.0 - ypixels_per_rank);
+           intensity = 0.25*(2.0 + ypixels_per_rank);
            red   *= intensity;
            green *= intensity;
            blue  *= intensity;
-        }
+        }  
         glColor3d(red, green, blue);
         glRectd(x1, y1, x2, y2);
      }
@@ -575,14 +575,14 @@ void key(unsigned char k, int x, int y)
       break;
 
     case 'w':  // Zoom in - x axis
-      xrange *= 0.9900990099009901;
+      xrange *= 0.9970089730807577;
       xmin = xcenter - 0.5*xrange;
       xmax = xcenter + 0.5*xrange;
       rescale(event, evbeg, evend, num_events, xmin, xrange);
       break;
 
     case 'W':  // Zoom out - x axis
-      xrange *= 1.0100000000000000;
+      xrange *= 1.0030000000000000;
       xmin = xcenter - 0.5*xrange;
       xmax = xcenter + 0.5*xrange;
       rescale(event, evbeg, evend, num_events, xmin, xrange);
