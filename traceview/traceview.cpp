@@ -842,7 +842,8 @@ void special(int k, int ix, int iy)
 //======================================================================
 void mouse(int button, int state, int ix, int iy)
 {
-   double old_xmin;
+   double old_xmin, old_ymin;
+   double yscale = 1.0/(ypixels - 1);
 
    if (mouse_mode == MOUSE_PICKS)
    {
@@ -925,15 +926,32 @@ void mouse(int button, int state, int ix, int iy)
      }
      else if ((button==GLUT_LEFT_BUTTON) && (state==GLUT_UP))
      {
-        moving = 0;
-        draw_zoom_box = 0;
+        moving = 0; 
+        draw_zoom_box = 0; 
         if (ix > ix_start)
         {
            old_xmin = xmin;
            xmin = old_xmin + ((double) ix_start)*xscale*xrange;
            xmax = old_xmin + ((double) ix)*xscale*xrange;
            xrange = xmax - xmin;
+           yrange = ymax - ymin;
            xcenter = 0.5*(xmin + xmax);
+           if (iy < iy_start) 
+           {
+               old_ymin = ymin;
+               ymin = old_ymin + ((double) (ypixels - iy_start))*yscale*yrange;
+               ymax = old_ymin + ((double) (ypixels - iy))*yscale*yrange;
+               yrange = ymax - ymin;
+               ycenter = 0.5*(ymin + ymax);
+           }
+           else
+           {
+               old_ymin = ymin;
+               ymax = old_ymin + ((double) (ypixels - iy_start))*yscale*yrange;
+               ymin = old_ymin + ((double) (ypixels - iy))*yscale*yrange;
+               yrange = ymax - ymin;
+               ycenter = 0.5*(ymin + ymax);
+           }
            rescale(event, evbeg, evend, num_events, xmin, xrange);
            glutPostRedisplay();
         }
