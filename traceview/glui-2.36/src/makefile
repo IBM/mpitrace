@@ -1,40 +1,14 @@
 .SUFFIXES: .cpp
 
-#for sgi   -- comment out the lines below to use on HP
-#CC=CC -g0 -o32
-#CC=gcc
-
 # Compiler options
 OPTS=-O2
-
-UNAME = $(shell uname)
-
-ifeq ($(UNAME), Linux)
-CXX       = /usr/bin/g++
+CXX       = g++ 
 CPPFLAGS += $(OPTS) -Wall -pedantic
-endif
-
-#######################################
 
 CPPFLAGS += -I./ -I./include
 
 LIBGLUI = -L./lib -lglui
-LIBGL   = -L/usr/lib64/nvidia -lglut -lGLU -lGL 
-LIBS    = 
-
-# One of the following options only...
-
-# (1) OpenGLUT
-# LIBGLUT   = -L/usr/X11R6/lib -lopenglut
-# CPPFLAGS += -I/usr/X11R6/include -DGLUI_OPENGLUT
-
-# (2) FreeGLUT
-# LIBGLUT   = -L/usr/X11R6/lib -lfreeglut
-# CPPFLAGS += -I/usr/X11R6/include -DGLUI_FREEGLUT
-
-# (3) GLUT
-LIBGLUT   = 
-CPPFLAGS +=
+LIBGL   = -lGLU -lGL -lglut
 
 #######################################
 

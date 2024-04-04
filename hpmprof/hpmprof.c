@@ -2,7 +2,7 @@
  * author : Bob Walkup
  */
 
-#define _GNU_SOURCE  // required for dladdr()
+#define _GNU_SOURCE  // required for dladdr() and dl_iterate_phdr()
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +17,16 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <sys/types.h>
+
+#include <link.h>
+
+static unsigned long base_address;
+
+static int get_base_address(struct dl_phdr_info *info, size_t size, void *data)
+{
+    base_address = (unsigned long) info->dlpi_addr;
+    return 1;
+}
 
 #if defined(__x86_64__)
  #define TARGET "x86_64-unknown-linux-gnu"
@@ -141,7 +151,7 @@ void histoLibHandler(int handle, void * address, long long overflow, void * cont
 
 #ifdef __x86_64__
     // save each address
-    unsigned long bin = (unsigned long) ((unsigned long) address - offset);
+    unsigned long bin = (unsigned long) ((unsigned long) address - base_address - offset);
 #else
     // each address takes 4 bytes so bin = ((address - mystart) >> 2
     unsigned long bin = (unsigned long) (((unsigned long) address - offset) >> 2);
@@ -163,7 +173,7 @@ void histoLibHandler(int handle, void * address, long long overflow, void * cont
 }
 
 
-// This is the overflow interrupt handler.
+// This is the overflow interrupt handler listing symbols for addresses outside the program text
 void histoSymHandler(int handle, void * address, long long overflow, void * context)
 {
     int rc, indx;
@@ -171,7 +181,7 @@ void histoSymHandler(int handle, void * address, long long overflow, void * cont
 
 #ifdef __x86_64__
     // save each address
-    unsigned long bin = (unsigned long) ((unsigned long) address - offset);
+    unsigned long bin = (unsigned long) ((unsigned long) address - base_address  - offset);
 #else
     // each address takes 4 bytes so bin = ((address - mystart) >> 2
     unsigned long bin = (unsigned long) (((unsigned long) address - offset) >> 2);
@@ -243,11 +253,16 @@ void HPM_Prof_init(void)
    long long freq_counter_in, freq_counter_out;
    int interrupt_filter = 1;
 
+   if (initialized) return;
+
 #ifdef SERIAL_VERSION
    myrank = 0;
 #else
    PMPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 #endif
+
+   // get the dynamically assigned base address of the executable
+   dl_iterate_phdr(&get_base_address, NULL);
 
    // optionally enable interrupts only for specified ranks
    list_ptr = getenv("SAVE_LIST");
@@ -319,6 +334,8 @@ void HPM_Prof_init(void)
 
    histo_size = (long ) section->size;
    offset     = (long ) section->vma;
+   long output_offset = (long) section->output_offset;
+
 
    // note : histo_size defined here = size of program text in bytes
    if (histo_size < 0L) {
