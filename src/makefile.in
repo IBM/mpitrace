@@ -6,7 +6,7 @@
 ifeq ($(VPROF),-DVPROF)
   VPROF_STATIC_OBJ  = vprof_static.o
   VPROF_DYNAMIC_OBJ = vprof_bfd.o
-  BFD_LIB   = -L BINUTILS_INSTALL_PATH/lib -lbfd  -L BINUTILS_INSTALL_PATH/lib64 -liberty -lz  
+  BFD_LIB   = -Wl,-rpath=BINUTILS_INSTALL_PATH/lib64 -Wl,-rpath=BINUTILS_INSTALL_PATH/lib -L BINUTILS_INSTALL_PATH/lib -L BINUTILS_INSTALL_PATH/lib64 -lbfd -liberty -lz  
 else
   VPROF_OBJ = 
   BFD_LIB   = 
@@ -91,8 +91,8 @@ hpm.o : hpm.c counters.h
 	$(CC) -c $(CFLAGS) $(UNCORE) -DUSE_MPI $(PAPI_INC) hpm.c -o $@
 
 vprof_static.o : ../vprof/vprof_static.c
-	$(CC) -c $(CFLAGS) -I BINUTILS_INSTALL_PATH/include ../vprof/vprof_static.c -o $@
-	
+	$(CC) -c $(CFLAGS) -I BINUTILS_INSTALL_PATH/include -I BINUTILS_INSTALL_PATH/include/extra ../vprof/vprof_static.c -o $@
+
 vprof_bfd.o : ../vprof/vprof_bfd.c
-	$(CC) -c $(CFLAGS) -I BINUTILS_INSTALL_PATH/include ../vprof/vprof_bfd.c -o $@
+	$(CC) -c $(CFLAGS) -I BINUTILS_INSTALL_PATH/include -I BINUTILS_INSTALL_PATH/include/extra ../vprof/vprof_bfd.c -o $@
 

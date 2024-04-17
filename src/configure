@@ -217,6 +217,8 @@ if [ $vprof_flag == 1 ]; then
     echo -n testing for binutils config.h...
     if [ -f $binutils_path/include/config.h ]; then
       echo found
+    elif [ -f $binutils_path/include/extra/config.h ]; then
+      echo found
     else
       echo binutils config.h not found ... check your binutils path ... exiting
       exit
