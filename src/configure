@@ -306,8 +306,14 @@ if [ $hpm_flag == 1 ]; then
      if [ $counter_type != core ]; then
        echo "for arch = aarch64, only core counters are currently supported"
      fi
-     ln -sf ../counters/thunderx2_core.h counters.h
-     echo "setting link : ln -sf ../counters/thunderx2_core.h counters.h"
+     model_string=$(papi_avail  | grep 'Model string' | sed 's/.*: //' | sed 's/ [(].*//')
+     if [ "$model_string" = "Arm Neoverse V1" ]; then
+       ln -sf ../counters/neoverse_v1_core.h counters.h
+       echo "setting link : ln -sf ../counters/neoverse_v1_core.h counters.h"
+     else
+       ln -sf ../counters/thunderx2_core.h counters.h
+       echo "setting link : ln -sf ../counters/thunderx2_core.h counters.h"
+     fi
      ;;
   esac
 
