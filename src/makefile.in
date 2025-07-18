@@ -6,7 +6,7 @@
 ifeq ($(VPROF),-DVPROF)
   VPROF_STATIC_OBJ  = vprof_static.o
   VPROF_DYNAMIC_OBJ = vprof_bfd.o
-  BFD_LIB   = -L BINUTILS_INSTALL_PATH/lib -lbfd  -L BINUTILS_INSTALL_PATH/lib64 -liberty -lz  
+  BFD_LIB   = -L BINUTILS_INSTALL_PATH/lib -lbfd -lsframe  -L BINUTILS_INSTALL_PATH/lib64 -liberty -lz -lzstd -ldl
 else
   VPROF_OBJ = 
   BFD_LIB   = 

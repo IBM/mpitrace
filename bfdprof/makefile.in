@@ -2,7 +2,7 @@
 # set the path to your gnu binutils install
 #------------------------------------------------------------------------------
   INC = -I BINUTILS_INSTALL_PATH/include
-  LIB = -L BINUTILS_INSTALL_PATH/lib -lbfd -lsframe -L BINUTILS_INSTALL_PATH/lib64 -liberty  -lz -ldl 
+  LIB = -L BINUTILS_INSTALL_PATH/lib -lbfd -lsframe -L BINUTILS_INSTALL_PATH/lib64 -liberty  -lz -lzstd -ldl 
 # -----------------------------------------------------------------------------
 
 all: bfdprof annotate_objdump

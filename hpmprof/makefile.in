@@ -4,7 +4,7 @@
  
 HPM = -DHPMPROF -I PAPI_INSTALL_PATH/include -I BINUTILS_INSTALL_PATH/include
 PAPI_OBJ = PAPI_INSTALL_PATH/lib/libpapi.a
-BFD_LIB   = -L BINUTILS_INSTALL_PATH/lib -lbfd  -L BINUTILS_INSTALL_PATH/lib64 -liberty -lz
+BFD_LIB   = -L BINUTILS_INSTALL_PATH/lib -lbfd -lsframe  -L BINUTILS_INSTALL_PATH/lib64 -liberty -lz -lzstd -ldl
 
 #------------------------------------------------------------------------------
 # use gcc to build the wrapper libraries
