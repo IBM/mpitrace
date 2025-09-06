@@ -105,7 +105,7 @@ if [ $mpicc_flag == 1 ]; then
         exit
       else
        cp makefile.in makefile
-       sed -i "s/CC = mpicc/CC = $mpi_compiler/g" makefile
+       sed -i "s#CC = mpicc#CC = $mpi_compiler#g" makefile
       fi  
     else
       echo ensure that $mpi_compiler is in your PATH and re-run the configure script ... exiting
@@ -225,7 +225,7 @@ if [ $vprof_flag == 1 ]; then
     x_binutils_path="$(echo $binutils_path | sed 's/\//\\\//g')"
 
     sed -i "s/#VPROF = -DVPROF/ VPROF = -DVPROF/g" makefile
-    sed -i "s/BINUTILS_INSTALL_PATH/$x_binutils_path/g" makefile
+    sed -i "s#BINUTILS_INSTALL_PATH#$x_binutils_path#g" makefile
 
   else
 
@@ -267,7 +267,7 @@ if [ $hpm_flag == 1 ]; then
 
     x_papi_path="$(echo $papi_path | sed 's/\//\\\//g')"
 
-    sed -i "s/PAPI_INSTALL_PATH/$x_papi_path/g" makefile
+    sed -i "s#PAPI_INSTALL_PATH#$x_papi_path#g" makefile
 
   else
 
