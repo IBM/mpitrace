@@ -23,6 +23,7 @@
    else if (strncasecmp(ptr,"yes",3) == 0)
    {
       add_timestamp = 1;
+      memset(timestamp, '\0', sizeof(timestamp));
       if (taskid == 0) 
       {
          current_time = time(NULL);
@@ -320,7 +321,7 @@
    {
       profile_elapsed_time = (double *) malloc(max_profile_blocks*sizeof(double));
 
-      profile_key = (int *) malloc(max_profile_blocks*sizeof(int));
+      profile_key = (unsigned int *) malloc(max_profile_blocks*sizeof(int));
 
       profile_stack = (long **) malloc(max_profile_blocks*sizeof(long *));
       profile_stack[0] = (long *) malloc(max_profile_blocks*max_stack_depth*sizeof(long));

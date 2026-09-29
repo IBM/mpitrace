@@ -122,7 +122,7 @@ static int trace_max_rank = 255;
 static int trace_min_rank = 0;
 static int event_buffer_overflow = 0;
 static int add_timestamp = 0;
-static char timestamp[12];
+static char timestamp[64];
 
 static long event_count[MAX_IDS];
 static double total_time[MAX_IDS];
@@ -182,7 +182,6 @@ static void swap8(char * in, char * out);
 static void swap4(char * in, char * out);
 static void write_profile_data(void);
 static void write_profile_data_myrank(void);
-static int index_from_address(int);
 static int index_from_key(unsigned int);
 static void print_profile_by_call_stack(FILE *);
 static void initialize_summary_data(void);

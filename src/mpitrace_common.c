@@ -10,14 +10,10 @@ void LogEvent(int id, struct timeval TV1, struct timeval TV2,
 {
    unsigned int k, bin, limit, key;
    int size, parent, grandparent;
-   int dx1, dy1, dz1;
-   int dx2, dy2, dz2;
-   int dx, dy, dz;
    double timediff;
    double tbeg, tend;
    MPI_Group group;
    int world_dest;
-   int write_flag;
    static int first_window_event = 1;
    static int last_window_event = 1;
 #ifdef USE_LOCKS
@@ -236,12 +232,8 @@ void LogIOEvent(int id, struct timeval TV1, struct timeval TV2,
 {
    unsigned int k, bin, limit, key;
    int size, parent, grandparent;
-   int dx1, dy1, dz1;
-   int dx2, dy2, dz2;
-   int dx, dy, dz;
    double timediff;
    double tbeg, tend;
-   int write_flag;
    static int first_window_event = 1;
    static int last_window_event = 1;
 #ifdef USE_LOCKS
@@ -503,7 +495,6 @@ void mpitrace_traceback(int *rank)
   int level;
   void * addresses[MAX_CALL_DEPTH];
   int depth;
-  int i;
 
   depth = backtrace(addresses, MAX_CALL_DEPTH);
 
@@ -989,14 +980,13 @@ static void print_profile_by_call_stack(FILE * fh)
 
 static void write_profile_data(void)
 {
-   int i, j, k, rc, id, bin, myrank, print_summary;
+   int i, k, rc, id, bin, myrank, print_summary;
    double total_comm, total_count, avg_bytes, avg_size, current_time;
    unsigned int min_size, max_size;
    struct timeval TV;
    struct rusage RU;
    int * sorted_rank;
-   int task, mintask, mycpu, maxcpu, * all_cpus;
-   cpu_set_t cpuset;
+   int task, mintask, mycpu, * all_cpus;
    long * all_context_switches;
    long total_bytes_sent;
    double * all_total_comm, * sorted_total_comm, * all_memsizes;
@@ -1030,7 +1020,7 @@ static void write_profile_data(void)
                        int rank;
                     };
    struct maxStruct my_mem, max_mem, my_elapsed, max_elapsed;
-   char tformat[160], hfmt[32], heading[160];
+   char tformat[160], heading[160];
    char sformat[] = "%-28s %12ld    %11.1f   %12.3f\n";
    char pformat[] = "   %-28s %12ld    %11.1f   %12.3f\n";
    char dformat[] = "                    %12ld   %11.1f   %12.3f\n";
@@ -1331,11 +1321,6 @@ static void write_profile_data(void)
 
       if (myrank==0 && print_summary)
       {
-         sprintf(tformat, "%%6d %%%ds %%6d %%10.2lf  %%10.2lf  %%10.2lf  %%10.2lf  %%10.2lf  %%10ld", maxlen);
-         strcat(tformat, "\n");
-         sprintf(hfmt, "%%s %%%ds", maxlen);
-         sprintf(heading, hfmt, "taskid", "host");
-         strcat(heading, "    cpu    comm(s)  elapsed(s)     user(s)   system(s)   size(MiB)    switches\n");
          fprintf(fh,"-----------------------------------------------------------------\n");
          fprintf(fh, "\nSummary for all tasks:\n");
          fprintf(fh, "\n");
@@ -1368,7 +1353,11 @@ static void write_profile_data(void)
             fprintf(fh, "\n\n");
          }
          fprintf(fh, "MPI timing summary for all ranks:\n");
-         fprintf(fh, heading);
+         sprintf(tformat, "%%6d %%%ds %%6d %%10.2lf  %%10.2lf  %%10.2lf  %%10.2lf  %%10.2lf  %%10ld", maxlen);
+         strcat(tformat, "\n");
+         sprintf(heading, "taskid %%%ds    cpu    comm(s)  elapsed(s)     user(s)   system(s)   size(MiB)    switches", maxlen); 
+         strcat(heading, "\n");
+         fprintf(fh, heading, "host");
          for (i=0; i<ntasks; i++)
          {
              ptr = hostnames + i*sizeof(host);
@@ -1584,30 +1573,21 @@ static void write_profile_data(void)
 
 static void write_profile_data_myrank(void)
 {
-   int i, k, rc, id, bin, myrank;
+   int i, id, bin, myrank;
    double total_comm, total_count, avg_bytes, avg_size, current_time;
    unsigned int min_size, max_size;
    struct timeval TV;
    struct rusage RU;
    long total_bytes_sent;
-   int min_comm_task, max_comm_task, med_comm_task;
-   double min_total_comm, max_total_comm, med_total_comm;
-   double mpi_io_time, min_mpi_io_time, max_mpi_io_time, avg_mpi_io_time;
-   int mpi_io_routines_called, total_mpi_io_routines_called;
+   double mpi_io_time;
+   int mpi_io_routines_called;
    FILE * fh, * fp;
-   int nbytes, partners, maxpartners;
-   MPI_Status status;
-   FILE * fd;
-   int tag = 100;
-   int buffer_overflow_count = 0;
-   char * ptr;
    char filename[240];
    char pattern_file[240];
    struct maxStruct {
                        float data;
                        int rank;
                     };
-   struct maxStruct my_mem, max_mem, my_elapsed, max_elapsed;
    char sformat[] = "%-28s %12ld    %11.1f   %12.3f\n";
    char pformat[] = "   %-28s %12ld    %11.1f   %12.3f\n";
    char dformat[] = "                    %12ld   %11.1f   %12.3f\n";
