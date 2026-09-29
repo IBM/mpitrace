@@ -1138,21 +1138,11 @@ void identify_event(int ix, int iy)
 //======================================================================
 void read_tracefile(char * filename)
 {
-  int i, k, rc, fd;
+  int i, rc, fd;
   int eventid;
   long bytes_read, bytes_left, num_bytes;
   char * ptr;
-  char in[EVENT_SIZE];
   struct stat stat_buffer;
-
-  rc = stat(filename, &stat_buffer);
-  if (rc < 0)
-  {
-    printf("can't find the trace file %s\n", filename);
-    exit(0);
-  }
-
-  num_bytes = stat_buffer.st_size;
 
 #ifdef _WIN32
   fd = open(filename, O_RDONLY | O_BINARY);
@@ -1164,6 +1154,16 @@ void read_tracefile(char * filename)
     printf("can't open the trace file %s\n", filename);
     exit(0);
   }
+
+  rc = stat(filename, &stat_buffer);
+  if (rc < 0)
+  {
+    printf("stat failed for the trace file %s ... exiting\n", filename);
+    exit(0);
+  }
+
+  num_bytes = stat_buffer.st_size;
+
 
   num_events = num_bytes / sizeof(struct eventstruct);
   
