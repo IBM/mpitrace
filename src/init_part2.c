@@ -321,18 +321,18 @@
    {
       profile_elapsed_time = (double *) malloc(max_profile_blocks*sizeof(double));
 
-      profile_key = (unsigned int *) malloc(max_profile_blocks*sizeof(int));
+      profile_key = (unsigned int *) malloc(max_profile_blocks*sizeof(unsigned int));
 
       profile_stack = (long **) malloc(max_profile_blocks*sizeof(long *));
-      profile_stack[0] = (long *) malloc(max_profile_blocks*max_stack_depth*sizeof(long));
+      profile_stack[0] = (long *) malloc(((size_t) max_profile_blocks)*((size_t) max_stack_depth)*sizeof(long));
       for (i=1; i<max_profile_blocks; i++) profile_stack[i] = profile_stack[0] + i*max_stack_depth;
 
       profile_call_count = (long **) malloc(max_profile_blocks*sizeof(long *));
-      profile_call_count[0] = (long *) malloc(max_profile_blocks*MAX_IDS*sizeof(long));
+      profile_call_count[0] = (long *) malloc(((size_t) max_profile_blocks)*((size_t) MAX_IDS)*sizeof(long));
       for (i=1; i<max_profile_blocks; i++) profile_call_count[i] = profile_call_count[0] + i*MAX_IDS;
 
       profile_function_time = (double **) malloc(max_profile_blocks*sizeof(double *));
-      profile_function_time[0] = (double *) malloc(max_profile_blocks*MAX_IDS*sizeof(double));
+      profile_function_time[0] = (double *) malloc(((size_t) max_profile_blocks)*((size_t) MAX_IDS)*sizeof(double));
       for (i=1; i<max_profile_blocks; i++) profile_function_time[i] = profile_function_time[0] + i*MAX_IDS;
 
       for (i=0; i<max_profile_blocks; i++)

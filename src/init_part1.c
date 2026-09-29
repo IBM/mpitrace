@@ -23,6 +23,7 @@
    strcpy(label[RSEND_ID],                    "MPI_Rsend");
    strcpy(label[BSEND_ID],                    "MPI_Bsend");
    strcpy(label[ISEND_ID],                    "MPI_Isend");
+   strcpy(label[ISEND_C_ID],                  "MPI_Isend_c");
    strcpy(label[ISSEND_ID],                   "MPI_Issend");
    strcpy(label[IRSEND_ID],                   "MPI_Irsend");
    strcpy(label[IBSEND_ID],                   "MPI_Ibsend");
@@ -33,6 +34,7 @@
    strcpy(label[RECV_INIT_ID],                "MPI_Recv_init");
    strcpy(label[RECV_ID],                     "MPI_Recv");
    strcpy(label[IRECV_ID],                    "MPI_Irecv");
+   strcpy(label[IRECV_C_ID],                  "MPI_Irecv_c");
    strcpy(label[SENDRECV_ID],                 "MPI_Sendrecv");
    strcpy(label[SENDRECV_REPLACE_ID],         "MPI_Sendrecv_replace");
    strcpy(label[BUFFER_ATTACH_ID],            "MPI_Buffer_attach");
@@ -50,12 +52,14 @@
    strcpy(label[START_ID],                    "MPI_Start");
    strcpy(label[STARTALL_ID],                 "MPI_Startall");
    strcpy(label[BCAST_ID],                    "MPI_Bcast");
+   strcpy(label[BCAST_C_ID],                  "MPI_Bcast_c");
    strcpy(label[IBCAST_ID],                   "MPI_Ibcast");
    strcpy(label[BARRIER_ID],                  "MPI_Barrier");
    strcpy(label[IBARRIER_ID],                 "MPI_Ibarrier");
    strcpy(label[REDUCE_ID],                   "MPI_Reduce");
    strcpy(label[IREDUCE_ID],                  "MPI_Ireduce");
    strcpy(label[ALLREDUCE_ID],                "MPI_Allreduce");
+   strcpy(label[ALLREDUCE_C_ID],              "MPI_Allreduce_c");
    strcpy(label[IALLREDUCE_ID],               "MPI_Iallreduce");
    strcpy(label[REDUCE_SCATTER_ID],           "MPI_Reduce_scatter");
    strcpy(label[IREDUCE_SCATTER_ID],          "MPI_Ireduce_scatter");
@@ -70,6 +74,7 @@
    strcpy(label[EXSCAN_ID],                   "MPI_Exscan");
    strcpy(label[IEXSCAN_ID],                  "MPI_Iexscan");
    strcpy(label[ALLGATHER_ID],                "MPI_Allgather");
+   strcpy(label[ALLGATHER_C_ID],              "MPI_Allgather_c");
    strcpy(label[NEIGHBOR_ALLGATHER_ID],       "MPI_Neighbor_allgather");
    strcpy(label[IALLGATHER_ID],               "MPI_Iallgather");
    strcpy(label[INEIGHBOR_ALLGATHER_ID],      "MPI_Ineighbor_allgather");

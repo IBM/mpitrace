@@ -24,7 +24,6 @@ int MPI_Init(int * argc, char *** argv)
    struct rusage RU;
    struct tm timeVal;
    time_t current_time;
-   double frequency;
    char * ptr;
    char * list_ptr;
    char delimiters[] = {","};
@@ -53,7 +52,6 @@ int MPI_Init_thread(int * argc, char *** argv, int required, int * provided)
    struct rusage RU;
    struct tm timeVal;
    time_t current_time;
-   double frequency;
    char * ptr;
    char * list_ptr;
    char delimiters[] = {","};
@@ -113,7 +111,7 @@ int MPI_Comm_rank(MPI_Comm comm, int * id)
    rc = PMPI_Comm_rank(comm, id);
    WTIME(TV2);
   
-   LogEvent(COMM_RANK_ID, TV1, TV2, -1, -1, -1, comm);
+   LogEvent(COMM_RANK_ID, TV1, TV2, -1, -1, -1L, comm);
    return rc;
 }
 
@@ -129,7 +127,7 @@ int MPI_Comm_size(MPI_Comm comm, int * ptasks)
    rc = PMPI_Comm_size(comm, ptasks);
    WTIME(TV2);
 
-   LogEvent(COMM_SIZE_ID, TV1, TV2, -1, -1, -1, comm);
+   LogEvent(COMM_SIZE_ID, TV1, TV2, -1, -1, -1L, comm);
    return rc;
 }
 
@@ -140,17 +138,18 @@ int MPI_Comm_size(MPI_Comm comm, int * ptasks)
 int MPI_Send(sbuf_t sbuf, int count, MPI_Datatype type, int dest, 
              int tag, MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Send(sbuf, count, type, dest, tag, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
-   if (dest == MPI_PROC_NULL) bytes = 0;
+   if (dest == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(SEND_ID, TV1, TV2, -1, dest, bytes, comm);
    return rc;
@@ -162,17 +161,18 @@ int MPI_Send(sbuf_t sbuf, int count, MPI_Datatype type, int dest,
 int MPI_Ssend(sbuf_t sbuf, int count, MPI_Datatype type, int dest, 
               int tag, MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Ssend(sbuf, count, type, dest, tag, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
-   if (dest == MPI_PROC_NULL) bytes = 0;
+   if (dest == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(SSEND_ID, TV1, TV2, -1, dest, bytes, comm);
    return rc;
@@ -184,17 +184,18 @@ int MPI_Ssend(sbuf_t sbuf, int count, MPI_Datatype type, int dest,
 int MPI_Rsend(sbuf_t sbuf, int count, MPI_Datatype type, int dest, 
               int tag, MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Rsend(sbuf, count, type, dest, tag, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
-   if (dest == MPI_PROC_NULL) bytes = 0;
+   if (dest == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(RSEND_ID, TV1, TV2, -1, dest, bytes, comm);
    return rc;
@@ -206,17 +207,18 @@ int MPI_Rsend(sbuf_t sbuf, int count, MPI_Datatype type, int dest,
 int MPI_Bsend(sbuf_t sbuf, int count, MPI_Datatype type, int dest, 
               int tag, MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Bsend(sbuf, count, type, dest, tag, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
-   if (dest == MPI_PROC_NULL) bytes = 0;
+   if (dest == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(BSEND_ID, TV1, TV2, -1, dest, bytes, comm);
    return rc;
@@ -228,21 +230,47 @@ int MPI_Bsend(sbuf_t sbuf, int count, MPI_Datatype type, int dest,
 int MPI_Isend(sbuf_t sbuf, int count, MPI_Datatype type, int dest, 
               int tag, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Isend(sbuf, count, type, dest, tag, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
-   if (dest == MPI_PROC_NULL) bytes = 0;
+   if (dest == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(ISEND_ID, TV1, TV2, -1, dest, bytes, comm);
    return rc;
 }
+
+#if MPI_VERSION >= 4
+/*----------------------------------------------------------*/
+/*    wrapper for C: MPI_Isend_c                            */
+/*----------------------------------------------------------*/
+int MPI_Isend_c(sbuf_t sbuf, MPI_Count count, MPI_Datatype type, int dest, 
+                int tag, MPI_Comm comm, MPI_Request * req)
+{
+   int rc, tsize;
+   long bytes;
+   struct timeval TV1, TV2;
+
+   WTIME(TV1);
+   rc = PMPI_Isend_c(sbuf, count, type, dest, tag, comm, req);
+   WTIME(TV2);
+
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
+
+   if (dest == MPI_PROC_NULL) bytes = 0L;
+
+   LogEvent(ISEND_C_ID, TV1, TV2, -1, dest, bytes, comm);
+   return rc;
+}
+#endif
 
 /*----------------------------------------------------------*/
 /*    wrapper for C: MPI_Issend                             */
@@ -250,17 +278,18 @@ int MPI_Isend(sbuf_t sbuf, int count, MPI_Datatype type, int dest,
 int MPI_Issend(sbuf_t sbuf, int count, MPI_Datatype type, int dest, 
                int tag, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Issend(sbuf, count, type, dest, tag, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
-   if (dest == MPI_PROC_NULL) bytes = 0;
+   if (dest == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(ISSEND_ID, TV1, TV2, -1, dest, bytes, comm);
    return rc;
@@ -272,17 +301,18 @@ int MPI_Issend(sbuf_t sbuf, int count, MPI_Datatype type, int dest,
 int MPI_Irsend(sbuf_t sbuf, int count, MPI_Datatype type, int dest, 
                int tag, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Irsend(sbuf, count, type, dest, tag, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
-   if (dest == MPI_PROC_NULL) bytes = 0;
+   if (dest == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(IRSEND_ID, TV1, TV2, -1, dest, bytes, comm);
    return rc;
@@ -294,17 +324,18 @@ int MPI_Irsend(sbuf_t sbuf, int count, MPI_Datatype type, int dest,
 int MPI_Ibsend(sbuf_t sbuf, int count, MPI_Datatype type, int dest, 
                int tag, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Ibsend(sbuf, count, type, dest, tag, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
-   if (dest == MPI_PROC_NULL) bytes = 0;
+   if (dest == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(IBSEND_ID, TV1, TV2, -1, dest, bytes, comm);
    return rc;
@@ -316,17 +347,18 @@ int MPI_Ibsend(sbuf_t sbuf, int count, MPI_Datatype type, int dest,
 int MPI_Send_init(sbuf_t sbuf, int count, MPI_Datatype type, int dest, 
                   int tag, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Send_init(sbuf, count, type, dest, tag, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
-   if (dest == MPI_PROC_NULL) bytes = 0;
+   if (dest == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(SEND_INIT_ID, TV1, TV2, -1, dest, bytes, comm);
    return rc;
@@ -338,17 +370,18 @@ int MPI_Send_init(sbuf_t sbuf, int count, MPI_Datatype type, int dest,
 int MPI_Ssend_init(sbuf_t sbuf, int count, MPI_Datatype type, int dest, 
                    int tag, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Ssend_init(sbuf, count, type, dest, tag, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
-   if (dest == MPI_PROC_NULL) bytes = 0;
+   if (dest == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(SSEND_INIT_ID, TV1, TV2, -1, dest, bytes, comm);
    return rc;
@@ -360,17 +393,18 @@ int MPI_Ssend_init(sbuf_t sbuf, int count, MPI_Datatype type, int dest,
 int MPI_Rsend_init(sbuf_t sbuf, int count, MPI_Datatype type, int dest, 
                    int tag, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Rsend_init(sbuf, count, type, dest, tag, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
-   if (dest == MPI_PROC_NULL) bytes = 0;
+   if (dest == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(RSEND_INIT_ID, TV1, TV2, -1, dest, bytes, comm);
    return rc;
@@ -382,17 +416,18 @@ int MPI_Rsend_init(sbuf_t sbuf, int count, MPI_Datatype type, int dest,
 int MPI_Bsend_init(sbuf_t sbuf, int count, MPI_Datatype type, int dest, 
                    int tag, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Bsend_init(sbuf, count, type, dest, tag, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
-   if (dest == MPI_PROC_NULL) bytes = 0;
+   if (dest == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(BSEND_INIT_ID, TV1, TV2, -1, dest, bytes, comm);
    return rc;
@@ -404,17 +439,18 @@ int MPI_Bsend_init(sbuf_t sbuf, int count, MPI_Datatype type, int dest,
 int MPI_Recv_init(void * sbuf, int count, MPI_Datatype type, int src, 
                   int tag, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Recv_init(sbuf, count, type, src, tag, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
-   if (src == MPI_PROC_NULL) bytes = 0;
+   if (src == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(RECV_INIT_ID, TV1, TV2, src, -1, bytes, comm);
    return rc;
@@ -426,7 +462,8 @@ int MPI_Recv_init(void * sbuf, int count, MPI_Datatype type, int src,
 int MPI_Recv(void * rbuf, int count, MPI_Datatype type, int src, 
              int tag, MPI_Comm comm, MPI_Status * status)
 {
-   int rc, bytes, source, count_received, flag;
+   int rc, tsize, source, count_received, flag;
+   long bytes;
    struct timeval TV1, TV2;
    MPI_Status local_status;
 
@@ -457,10 +494,10 @@ int MPI_Recv(void * rbuf, int count, MPI_Datatype type, int src,
        source = src;
    }
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count_received * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count_received) * ((long) tsize);
 
-   if (src == MPI_PROC_NULL) bytes = 0;
+   if (src == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(RECV_ID, TV1, TV2, source, -1, bytes, comm);
    return rc;
@@ -472,21 +509,47 @@ int MPI_Recv(void * rbuf, int count, MPI_Datatype type, int src,
 int MPI_Irecv(void * rbuf, int count, MPI_Datatype type, int src, 
               int tag, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Irecv(rbuf, count, type, src, tag, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
-   if (src == MPI_PROC_NULL) bytes = 0;
+   if (src == MPI_PROC_NULL) bytes = 0L;
 
    LogEvent(IRECV_ID, TV1, TV2, src, -1, bytes, comm);
    return rc;
 }
+
+#if MPI_VERSION >= 4
+/*----------------------------------------------------------*/
+/*    wrapper for C: MPI_Irecv_c                            */
+/*----------------------------------------------------------*/
+int MPI_Irecv_c(void * rbuf, MPI_Count count, MPI_Datatype type, int src, 
+                int tag, MPI_Comm comm, MPI_Request * req)
+{
+   int rc, tsize;
+   long bytes;
+   struct timeval TV1, TV2;
+
+   WTIME(TV1);
+   rc = PMPI_Irecv_c(rbuf, count, type, src, tag, comm, req);
+   WTIME(TV2);
+
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
+
+   if (src == MPI_PROC_NULL) bytes = 0L;
+
+   LogEvent(IRECV_C_ID, TV1, TV2, src, -1, bytes, comm);
+   return rc;
+}
+#endif
 
 /*----------------------------------------------------------*/
 /*    wrapper for C: MPI_Sendrecv                           */
@@ -495,7 +558,8 @@ int MPI_Sendrecv(sbuf_t sbuf, int scount, MPI_Datatype stype, int dest, int stag
                  void * rbuf, int rcount, MPI_Datatype rtype, int src, int rtag,
                  MPI_Comm comm, MPI_Status * status)
 {
-   int rc, sbytes, rbytes, bytes;
+   int rc, stsize, rtsize;
+   long sbytes, rbytes, bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -504,13 +568,13 @@ int MPI_Sendrecv(sbuf_t sbuf, int scount, MPI_Datatype stype, int dest, int stag
                       comm, status);
    WTIME(TV2);
 
-   PMPI_Type_size(stype, &sbytes);
-   sbytes = scount * sbytes;
+   PMPI_Type_size(stype, &stsize);
+   sbytes = ((long) scount) * ((long) stsize);
 
-   PMPI_Type_size(rtype, &rbytes);
-   rbytes = rcount * rbytes;
+   PMPI_Type_size(rtype, &rtsize);
+   rbytes = ((long) rcount) * ((long) rtsize);
 
-   bytes = 0;
+   bytes = 0L;
    if (dest != MPI_PROC_NULL) bytes += sbytes;
    if (src  != MPI_PROC_NULL) bytes += rbytes;
 
@@ -524,7 +588,8 @@ int MPI_Sendrecv(sbuf_t sbuf, int scount, MPI_Datatype stype, int dest, int stag
 int MPI_Sendrecv_replace(void * buf, int count, MPI_Datatype type, int dest, int stag,
                          int src, int rtag, MPI_Comm comm, MPI_Status * status)
 {
-   int rc, bytes, sbytes;
+   int rc, stsize;
+   long bytes, sbytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -532,10 +597,10 @@ int MPI_Sendrecv_replace(void * buf, int count, MPI_Datatype type, int dest, int
                               src, rtag, comm, status);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &sbytes);
-   sbytes = count * sbytes;
+   PMPI_Type_size(type, &stsize);
+   sbytes = ((long) count) * ((long) stsize);
 
-   bytes = 0;
+   bytes = 0L;
    if (dest != MPI_PROC_NULL) bytes += sbytes;
    if (src  != MPI_PROC_NULL) bytes += sbytes;
 
@@ -555,7 +620,7 @@ int MPI_Buffer_attach(void * buffer, int size)
    rc = PMPI_Buffer_attach(buffer, size);
    WTIME(TV2);
 
-   LogEvent(BUFFER_ATTACH_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(BUFFER_ATTACH_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -571,7 +636,7 @@ int MPI_Buffer_detach(void * buffer, int * size)
    rc = PMPI_Buffer_detach(buffer, size);
    WTIME(TV2);
 
-   LogEvent(BUFFER_DETACH_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(BUFFER_DETACH_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -587,7 +652,7 @@ int MPI_Probe(int src, int tag, MPI_Comm comm, MPI_Status * status)
    rc = PMPI_Probe(src, tag, comm, status);
    WTIME(TV2);
 
-   LogEvent(PROBE_ID, TV1, TV2, src, -1, -1, comm);
+   LogEvent(PROBE_ID, TV1, TV2, src, -1, -1L, comm);
    return rc;
 }
 
@@ -603,7 +668,7 @@ int MPI_Iprobe(int src, int tag, MPI_Comm comm, int * flag, MPI_Status * status)
    rc = PMPI_Iprobe(src, tag, comm, flag, status);
    WTIME(TV2);
 
-   LogEvent(IPROBE_ID, TV1, TV2, src, -1, -1, comm);
+   LogEvent(IPROBE_ID, TV1, TV2, src, -1, -1L, comm);
    return rc;
 }
 
@@ -619,7 +684,7 @@ int MPI_Test(MPI_Request * request, int * flag, MPI_Status * status)
    rc = PMPI_Test(request, flag, status);
    WTIME(TV2);
 
-   LogEvent(TEST_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(TEST_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -636,7 +701,7 @@ int MPI_Testany(int num, MPI_Request * req, int * indx, int * flag,
    rc = PMPI_Testany(num, req, indx, flag, status);
    WTIME(TV2);
 
-   LogEvent(TESTANY_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(TESTANY_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -652,7 +717,7 @@ int MPI_Testall(int num, MPI_Request * req, int * flag, MPI_Status * status)
    rc = PMPI_Testall(num, req, flag, status);
    WTIME(TV2);
 
-   LogEvent(TESTALL_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(TESTALL_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -669,7 +734,7 @@ int MPI_Testsome(int inum, MPI_Request * req, int * onum, int * ind,
    rc = PMPI_Testsome(inum, req, onum, ind, status);
    WTIME(TV2);
 
-   LogEvent(TESTSOME_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(TESTSOME_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -691,7 +756,7 @@ int MPI_Wait(MPI_Request * request, MPI_Status * status)
    else
        src = -1;
 
-   LogEvent(WAIT_ID, TV1, TV2, src, -1, -1, MPI_COMM_NULL);
+   LogEvent(WAIT_ID, TV1, TV2, src, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -713,7 +778,7 @@ int MPI_Waitany(int num, MPI_Request * req, int * indx, MPI_Status * status)
    else
        src = -1;
 
-   LogEvent(WAITANY_ID, TV1, TV2, src, -1, -1, MPI_COMM_NULL);
+   LogEvent(WAITANY_ID, TV1, TV2, src, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -729,7 +794,7 @@ int MPI_Waitall(int num, MPI_Request * req, MPI_Status * status)
    rc = PMPI_Waitall(num, req, status);
    WTIME(TV2);
 
-   LogEvent(WAITALL_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WAITALL_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -746,7 +811,7 @@ int MPI_Waitsome(int inum, MPI_Request * req, int * onum, int * ind,
    rc = PMPI_Waitsome(inum, req, onum, ind, status);
    WTIME(TV2);
 
-   LogEvent(WAITSOME_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WAITSOME_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -762,7 +827,7 @@ int MPI_Start(MPI_Request * req)
    rc = PMPI_Start(req);
    WTIME(TV2);
 
-   LogEvent(START_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(START_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -778,7 +843,7 @@ int MPI_Startall(int num, MPI_Request * req)
    rc = PMPI_Startall(num, req);
    WTIME(TV2);
 
-   LogEvent(STARTALL_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(STARTALL_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -788,7 +853,8 @@ int MPI_Startall(int num, MPI_Request * req)
 int MPI_Bcast(void * data, int count, MPI_Datatype type, 
               int root, MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[BCAST_ID]) 
@@ -803,8 +869,8 @@ int MPI_Bcast(void * data, int count, MPI_Datatype type,
    rc = PMPI_Bcast(data, count, type, root, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogEvent(BCAST_ID, TV1, TV2, root, -1, bytes, comm); 
    return rc;
@@ -817,15 +883,16 @@ int MPI_Bcast(void * data, int count, MPI_Datatype type,
 int MPI_Ibcast(void * data, int count, MPI_Datatype type, 
                int root, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Ibcast(data, count, type, root, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogEvent(IBCAST_ID, TV1, TV2, root, -1, bytes, comm); 
    return rc;
@@ -844,7 +911,7 @@ int MPI_Barrier(MPI_Comm comm)
    rc = PMPI_Barrier(comm);
    WTIME(TV2);
 
-   LogEvent(BARRIER_ID, TV1, TV2, -1, -1, -1, comm); 
+   LogEvent(BARRIER_ID, TV1, TV2, -1, -1, -1L, comm); 
    return rc;
 }
 
@@ -861,7 +928,7 @@ int MPI_Ibarrier(MPI_Comm comm, MPI_Request * req)
    rc = PMPI_Ibarrier(comm, req);
    WTIME(TV2);
 
-   LogEvent(IBARRIER_ID, TV1, TV2, -1, -1, -1, comm); 
+   LogEvent(IBARRIER_ID, TV1, TV2, -1, -1, -1L, comm); 
    return rc;
 }
 #endif
@@ -872,7 +939,8 @@ int MPI_Ibarrier(MPI_Comm comm, MPI_Request * req)
 int MPI_Reduce(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type, 
                MPI_Op op, int root, MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[REDUCE_ID]) 
@@ -887,8 +955,8 @@ int MPI_Reduce(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type,
    rc = PMPI_Reduce(sbuf, rbuf, count, type, op, root, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogEvent(REDUCE_ID, TV1, TV2, -1, root, bytes, comm); 
    return rc;
@@ -901,15 +969,16 @@ int MPI_Reduce(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type,
 int MPI_Ireduce(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type, 
                 MPI_Op op, int root, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Ireduce(sbuf, rbuf, count, type, op, root, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogEvent(IREDUCE_ID, TV1, TV2, -1, root, bytes, comm); 
    return rc;
@@ -922,7 +991,8 @@ int MPI_Ireduce(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type,
 int MPI_Allreduce(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type, 
                   MPI_Op op, MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[ALLREDUCE_ID]) 
@@ -937,12 +1007,102 @@ int MPI_Allreduce(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type,
    rc = PMPI_Allreduce(sbuf, rbuf, count, type, op, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogEvent(ALLREDUCE_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
 }
+
+#if MPI_VERSION >= 4
+/*----------------------------------------------------------*/
+/*    wrapper for C: MPI_Bcast_c                            */
+/*----------------------------------------------------------*/
+int MPI_Bcast_c(void * data, MPI_Count count, MPI_Datatype type, 
+                int root, MPI_Comm comm)
+{
+   int rc, tsize;
+   long bytes;
+   struct timeval TV1, TV2;
+
+   if (barrier_flag[BCAST_ID]) 
+   {
+      WTIME(TV1);
+      rc = PMPI_Barrier(comm);
+      WTIME(TV2);
+      synctime += ( ( TCONV(TV2) ) - ( TCONV(TV1) ) );
+   }
+
+   WTIME(TV1);
+   rc = PMPI_Bcast_c(data, count, type, root, comm);
+   WTIME(TV2);
+
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
+
+   LogEvent(BCAST_C_ID, TV1, TV2, root, -1, bytes, comm); 
+   return rc;
+}
+
+/*----------------------------------------------------------*/
+/*    wrapper for C: MPI_Allreduce_c                        */
+/*----------------------------------------------------------*/
+int MPI_Allreduce_c(sbuf_t sbuf, void * rbuf, MPI_Count count, MPI_Datatype type, 
+                    MPI_Op op, MPI_Comm comm)
+{
+   int rc, tsize;
+   long bytes;
+   struct timeval TV1, TV2;
+
+   if (barrier_flag[ALLREDUCE_ID]) 
+   {
+      WTIME(TV1);
+      rc = PMPI_Barrier(comm);
+      WTIME(TV2);
+      synctime += ( ( TCONV(TV2) ) - ( TCONV(TV1) ) );
+   }
+
+   WTIME(TV1);
+   rc = PMPI_Allreduce_c(sbuf, rbuf, count, type, op, comm);
+   WTIME(TV2);
+
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
+
+   LogEvent(ALLREDUCE_C_ID, TV1, TV2, -1, -1, bytes, comm); 
+   return rc;
+}
+
+/*----------------------------------------------------------*/
+/*    wrapper for C: MPI_Allgather_c                        */
+/*----------------------------------------------------------*/
+int MPI_Allgather_c(sbuf_t sbuf, MPI_Count scount, MPI_Datatype stype,
+                    void * rbuf, MPI_Count rcount, MPI_Datatype rtype,
+                    MPI_Comm comm)
+{
+   int rc, tsize;
+   long bytes;
+   struct timeval TV1, TV2;
+
+   if (barrier_flag[ALLGATHER_C_ID]) 
+   {
+      WTIME(TV1);
+      rc = PMPI_Barrier(comm);
+      WTIME(TV2);
+      synctime += ( ( TCONV(TV2) ) - ( TCONV(TV1) ) );
+   }
+
+   WTIME(TV1);
+   rc = PMPI_Allgather_c(sbuf, scount, stype, rbuf, rcount, rtype, comm);
+   WTIME(TV2);
+
+   PMPI_Type_size(stype, &tsize);
+   bytes = ((long) scount) * ((long) tsize);
+
+   LogEvent(ALLGATHER_C_ID, TV1, TV2, -1, -1, bytes, comm); 
+   return rc;
+}
+#endif
 
 #if MPI_VERSION >= 3
 /*----------------------------------------------------------*/
@@ -951,15 +1111,16 @@ int MPI_Allreduce(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type,
 int MPI_Iallreduce(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type, 
                    MPI_Op op, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Iallreduce(sbuf, rbuf, count, type, op, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogEvent(IALLREDUCE_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -972,7 +1133,8 @@ int MPI_Iallreduce(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type,
 int MPI_Reduce_scatter(sbuf_t sbuf, void * rbuf, iarray_t counts, MPI_Datatype type, 
                        MPI_Op op, MPI_Comm comm)
 {
-   int rc, i, bytes, num, tasks;
+   int rc, i, num, tsize, tasks;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[REDUCE_SCATTER_ID]) 
@@ -988,11 +1150,11 @@ int MPI_Reduce_scatter(sbuf_t sbuf, void * rbuf, iarray_t counts, MPI_Datatype t
    WTIME(TV2);
 
    PMPI_Comm_size(comm, &tasks);
-   PMPI_Type_size(type, &bytes);
+   PMPI_Type_size(type, &tsize);
 
    num = 0;
    for (i=0; i<tasks; i++) num += counts[i];
-   bytes = num * bytes;
+   bytes = ((long) num) * ((long) tsize);
 
    LogEvent(REDUCE_SCATTER_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1005,7 +1167,8 @@ int MPI_Reduce_scatter(sbuf_t sbuf, void * rbuf, iarray_t counts, MPI_Datatype t
 int MPI_Ireduce_scatter(sbuf_t sbuf, void * rbuf, iarray_t counts, MPI_Datatype type, 
                         MPI_Op op, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, i, bytes, num, tasks;
+   int rc, i, num, tsize, tasks;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -1013,11 +1176,11 @@ int MPI_Ireduce_scatter(sbuf_t sbuf, void * rbuf, iarray_t counts, MPI_Datatype 
    WTIME(TV2);
 
    PMPI_Comm_size(comm, &tasks);
-   PMPI_Type_size(type, &bytes);
+   PMPI_Type_size(type, &tsize);
 
    num = 0;
    for (i=0; i<tasks; i++) num += counts[i];
-   bytes = num * bytes;
+   bytes = ((long) num) * ((long) tsize);
 
    LogEvent(IREDUCE_SCATTER_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1031,7 +1194,8 @@ int MPI_Ireduce_scatter(sbuf_t sbuf, void * rbuf, iarray_t counts, MPI_Datatype 
 int MPI_Reduce_scatter_block(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type, 
                              MPI_Op op, MPI_Comm comm)
 {
-   int rc, i, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[REDUCE_SCATTER_BLOCK_ID]) 
@@ -1046,9 +1210,9 @@ int MPI_Reduce_scatter_block(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype t
    rc = PMPI_Reduce_scatter_block(sbuf, rbuf, count, type, op, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
+   PMPI_Type_size(type, &tsize);
 
-   bytes = count * bytes;
+   bytes = ((long) count) * ((long) tsize);
 
    LogEvent(REDUCE_SCATTER_BLOCK_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1062,16 +1226,17 @@ int MPI_Reduce_scatter_block(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype t
 int MPI_Ireduce_scatter_block(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type, 
                               MPI_Op op, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, i, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Ireduce_scatter_block(sbuf, rbuf, count, type, op, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
+   PMPI_Type_size(type, &tsize);
 
-   bytes = count * bytes;
+   bytes = ((long) count) * ((long) tsize);
 
    LogEvent(IREDUCE_SCATTER_BLOCK_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1085,7 +1250,8 @@ int MPI_Gather(sbuf_t sbuf, int scount, MPI_Datatype stype,
                void * rbuf, int rcount, MPI_Datatype rtype,
                int root, MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[GATHER_ID]) 
@@ -1100,8 +1266,8 @@ int MPI_Gather(sbuf_t sbuf, int scount, MPI_Datatype stype,
    rc = PMPI_Gather(sbuf, scount, stype, rbuf, rcount, rtype, root, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(rtype, &bytes);
-   bytes = scount * bytes;
+   PMPI_Type_size(rtype, &tsize);
+   bytes = ((long) scount) * ((long) tsize);
 
    LogEvent(GATHER_ID, TV1, TV2, -1, root, bytes, comm); 
    return rc;
@@ -1115,15 +1281,16 @@ int MPI_Igather(sbuf_t sbuf, int scount, MPI_Datatype stype,
                 void * rbuf, int rcount, MPI_Datatype rtype,
                 int root, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Igather(sbuf, scount, stype, rbuf, rcount, rtype, root, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(rtype, &bytes);
-   bytes = scount * bytes;
+   PMPI_Type_size(rtype, &tsize);
+   bytes = ((long) scount) * ((long) tsize);
 
    LogEvent(IGATHER_ID, TV1, TV2, -1, root, bytes, comm); 
    return rc;
@@ -1137,7 +1304,8 @@ int MPI_Gatherv(sbuf_t sbuf, int scount, MPI_Datatype stype,
                 void * rbuf, iarray_t rcounts, iarray_t rdisp, MPI_Datatype rtype,
                 int root, MPI_Comm comm)
 {
-   int rc, bytes, id;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[GATHERV_ID]) 
@@ -1152,8 +1320,8 @@ int MPI_Gatherv(sbuf_t sbuf, int scount, MPI_Datatype stype,
    rc = PMPI_Gatherv(sbuf, scount, stype, rbuf, rcounts, rdisp, rtype, root, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(rtype, &bytes);
-   bytes = scount * bytes;
+   PMPI_Type_size(rtype, &tsize);
+   bytes = ((long) scount) * ((long) tsize);
 
    LogEvent(GATHERV_ID, TV1, TV2, -1, root, bytes, comm); 
    return rc;
@@ -1167,15 +1335,16 @@ int MPI_Igatherv(sbuf_t sbuf, int scount, MPI_Datatype stype,
                  void * rbuf, iarray_t rcounts, iarray_t rdisp, MPI_Datatype rtype,
                  int root, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes, id;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Igatherv(sbuf, scount, stype, rbuf, rcounts, rdisp, rtype, root, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(rtype, &bytes);
-   bytes = scount * bytes;
+   PMPI_Type_size(rtype, &tsize);
+   bytes = ((long) scount) * ((long) tsize);
 
    LogEvent(IGATHERV_ID, TV1, TV2, -1, root, bytes, comm); 
    return rc;
@@ -1188,7 +1357,8 @@ int MPI_Igatherv(sbuf_t sbuf, int scount, MPI_Datatype stype,
 int MPI_Scan(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type, 
              MPI_Op op, MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[SCAN_ID]) 
@@ -1203,8 +1373,8 @@ int MPI_Scan(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type,
    rc = PMPI_Scan(sbuf, rbuf, count, type, op, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogEvent(SCAN_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1217,15 +1387,16 @@ int MPI_Scan(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type,
 int MPI_Iscan(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type, 
               MPI_Op op, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Iscan(sbuf, rbuf, count, type, op, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogEvent(ISCAN_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1238,7 +1409,8 @@ int MPI_Iscan(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type,
 int MPI_Exscan(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type, 
                MPI_Op op, MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[EXSCAN_ID]) 
@@ -1253,8 +1425,8 @@ int MPI_Exscan(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type,
    rc = PMPI_Exscan(sbuf, rbuf, count, type, op, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogEvent(EXSCAN_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1267,15 +1439,16 @@ int MPI_Exscan(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type,
 int MPI_Iexscan(sbuf_t sbuf, void * rbuf, int count, MPI_Datatype type, 
                 MPI_Op op, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Iexscan(sbuf, rbuf, count, type, op, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogEvent(IEXSCAN_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1289,7 +1462,8 @@ int MPI_Allgather(sbuf_t sbuf, int scount, MPI_Datatype stype,
                   void * rbuf, int rcount, MPI_Datatype rtype,
                   MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[ALLGATHER_ID]) 
@@ -1304,8 +1478,8 @@ int MPI_Allgather(sbuf_t sbuf, int scount, MPI_Datatype stype,
    rc = PMPI_Allgather(sbuf, scount, stype, rbuf, rcount, rtype, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(rtype, &bytes);
-   bytes = rcount * bytes;
+   PMPI_Type_size(rtype, &tsize);
+   bytes = ((long) rcount) * ((long) tsize);
 
    LogEvent(ALLGATHER_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1319,7 +1493,8 @@ int MPI_Neighbor_allgather(sbuf_t sbuf, int scount, MPI_Datatype stype,
                            void * rbuf, int rcount, MPI_Datatype rtype,
                            MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[NEIGHBOR_ALLGATHER_ID]) 
@@ -1334,8 +1509,8 @@ int MPI_Neighbor_allgather(sbuf_t sbuf, int scount, MPI_Datatype stype,
    rc = PMPI_Neighbor_allgather(sbuf, scount, stype, rbuf, rcount, rtype, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(rtype, &bytes);
-   bytes = rcount * bytes;
+   PMPI_Type_size(rtype, &tsize);
+   bytes = ((long) rcount) * ((long) tsize);
 
    LogEvent(NEIGHBOR_ALLGATHER_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1348,15 +1523,16 @@ int MPI_Iallgather(sbuf_t sbuf, int scount, MPI_Datatype stype,
                    void * rbuf, int rcount, MPI_Datatype rtype,
                    MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Iallgather(sbuf, scount, stype, rbuf, rcount, rtype, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(rtype, &bytes);
-   bytes = rcount * bytes;
+   PMPI_Type_size(rtype, &tsize);
+   bytes = ((long) rcount) * ((long) tsize);
 
    LogEvent(IALLGATHER_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1369,15 +1545,16 @@ int MPI_Ineighbor_allgather(sbuf_t sbuf, int scount, MPI_Datatype stype,
                             void * rbuf, int rcount, MPI_Datatype rtype,
                             MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Ineighbor_allgather(sbuf, scount, stype, rbuf, rcount, rtype, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(rtype, &bytes);
-   bytes = rcount * bytes;
+   PMPI_Type_size(rtype, &tsize);
+   bytes = ((long) rcount) * ((long) tsize);
 
    LogEvent(INEIGHBOR_ALLGATHER_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1391,7 +1568,8 @@ int MPI_Allgatherv(sbuf_t sbuf, int scount, MPI_Datatype stype,
                    void * rbuf, iarray_t rcounts, iarray_t rdisp, MPI_Datatype rtype,
                    MPI_Comm comm)
 {
-   int rc, bytes, id;
+   int rc, tsize, id;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[ALLGATHERV_ID]) 
@@ -1407,8 +1585,8 @@ int MPI_Allgatherv(sbuf_t sbuf, int scount, MPI_Datatype stype,
    WTIME(TV2);
 
    PMPI_Comm_rank(comm, &id);
-   PMPI_Type_size(rtype, &bytes);
-   bytes = rcounts[id] * bytes;
+   PMPI_Type_size(rtype, &tsize);
+   bytes = ((long) rcounts[id]) * ((long) tsize);
 
    LogEvent(ALLGATHERV_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1422,7 +1600,8 @@ int MPI_Neighbor_allgatherv(sbuf_t sbuf, int scount, MPI_Datatype stype,
                             void * rbuf, iarray_t rcounts, iarray_t rdisp, MPI_Datatype rtype,
                             MPI_Comm comm)
 {
-   int rc, bytes, id;
+   int rc, tsize, id;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[NEIGHBOR_ALLGATHERV_ID]) 
@@ -1438,8 +1617,8 @@ int MPI_Neighbor_allgatherv(sbuf_t sbuf, int scount, MPI_Datatype stype,
    WTIME(TV2);
 
    PMPI_Comm_rank(comm, &id);
-   PMPI_Type_size(rtype, &bytes);
-   bytes = rcounts[id] * bytes;
+   PMPI_Type_size(rtype, &tsize);
+   bytes = ((long) rcounts[id]) * ((long) tsize);
 
    LogEvent(NEIGHBOR_ALLGATHERV_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1452,7 +1631,8 @@ int MPI_Iallgatherv(sbuf_t sbuf, int scount, MPI_Datatype stype,
                     void * rbuf, iarray_t rcounts, iarray_t rdisp, MPI_Datatype rtype,
                     MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes, id;
+   int rc, tsize, id;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -1460,8 +1640,8 @@ int MPI_Iallgatherv(sbuf_t sbuf, int scount, MPI_Datatype stype,
    WTIME(TV2);
 
    PMPI_Comm_rank(comm, &id);
-   PMPI_Type_size(rtype, &bytes);
-   bytes = rcounts[id] * bytes;
+   PMPI_Type_size(rtype, &tsize);
+   bytes = ((long) rcounts[id]) * ((long) tsize);
 
    LogEvent(IALLGATHERV_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1474,7 +1654,8 @@ int MPI_Ineighbor_allgatherv(sbuf_t sbuf, int scount, MPI_Datatype stype,
                              void * rbuf, iarray_t rcounts, iarray_t rdisp, MPI_Datatype rtype,
                              MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes, id;
+   int rc, tsize, id;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -1482,8 +1663,8 @@ int MPI_Ineighbor_allgatherv(sbuf_t sbuf, int scount, MPI_Datatype stype,
    WTIME(TV2);
 
    PMPI_Comm_rank(comm, &id);
-   PMPI_Type_size(rtype, &bytes);
-   bytes = rcounts[id] * bytes;
+   PMPI_Type_size(rtype, &tsize);
+   bytes = ((long) rcounts[id]) * ((long) tsize);
 
    LogEvent(INEIGHBOR_ALLGATHERV_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1497,7 +1678,8 @@ int MPI_Scatter(sbuf_t sbuf, int scount, MPI_Datatype stype,
                 void * rbuf, int rcount, MPI_Datatype rtype,
                 int root, MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[SCATTER_ID]) 
@@ -1512,8 +1694,8 @@ int MPI_Scatter(sbuf_t sbuf, int scount, MPI_Datatype stype,
    rc = PMPI_Scatter(sbuf, scount, stype, rbuf, rcount, rtype, root, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(stype, &bytes);
-   bytes = rcount * bytes;
+   PMPI_Type_size(stype, &tsize);
+   bytes = ((long) rcount) * ((long) tsize);
 
    LogEvent(SCATTER_ID, TV1, TV2, root, -1, bytes, comm); 
    return rc;
@@ -1527,15 +1709,16 @@ int MPI_Iscatter(sbuf_t sbuf, int scount, MPI_Datatype stype,
                  void * rbuf, int rcount, MPI_Datatype rtype,
                  int root, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Iscatter(sbuf, scount, stype, rbuf, rcount, rtype, root, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(stype, &bytes);
-   bytes = rcount * bytes;
+   PMPI_Type_size(stype, &tsize);
+   bytes = ((long) rcount) * ((long) tsize);
 
    LogEvent(ISCATTER_ID, TV1, TV2, root, -1, bytes, comm); 
    return rc;
@@ -1549,7 +1732,8 @@ int MPI_Scatterv(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, MPI_Datatype sty
                  void * rbuf, int rcount, MPI_Datatype rtype,
                  int root, MPI_Comm comm)
 {
-   int rc, bytes, id;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[SCATTERV_ID]) 
@@ -1564,8 +1748,8 @@ int MPI_Scatterv(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, MPI_Datatype sty
    rc = PMPI_Scatterv(sbuf, scounts, sdisp, stype, rbuf, rcount, rtype, root, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(stype, &bytes);
-   bytes = rcount * bytes;
+   PMPI_Type_size(stype, &tsize);
+   bytes = ((long) rcount) * ((long) tsize);
 
    LogEvent(SCATTERV_ID, TV1, TV2, root, -1, bytes, comm); 
    return rc;
@@ -1579,15 +1763,16 @@ int MPI_Iscatterv(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, MPI_Datatype st
                   void * rbuf, int rcount, MPI_Datatype rtype,
                   int root, MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes, id;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Iscatterv(sbuf, scounts, sdisp, stype, rbuf, rcount, rtype, root, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(stype, &bytes);
-   bytes = rcount * bytes;
+   PMPI_Type_size(stype, &tsize);
+   bytes = ((long) rcount) * ((long) tsize);
 
    LogEvent(ISCATTERV_ID, TV1, TV2, root, -1, bytes, comm); 
    return rc;
@@ -1601,7 +1786,8 @@ int MPI_Alltoall(sbuf_t sbuf, int scount, MPI_Datatype stype,
                  void * rbuf, int rcount, MPI_Datatype rtype,
                  MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[ALLTOALL_ID]) 
@@ -1616,8 +1802,8 @@ int MPI_Alltoall(sbuf_t sbuf, int scount, MPI_Datatype stype,
    rc = PMPI_Alltoall(sbuf, scount, stype, rbuf, rcount, rtype, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(stype, &bytes);
-   bytes = scount * bytes;
+   PMPI_Type_size(stype, &tsize);
+   bytes = ((long) scount) * ((long) tsize);
 
    LogEvent(ALLTOALL_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1631,7 +1817,8 @@ int MPI_Neighbor_alltoall(sbuf_t sbuf, int scount, MPI_Datatype stype,
                           void * rbuf, int rcount, MPI_Datatype rtype,
                           MPI_Comm comm)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[NEIGHBOR_ALLTOALL_ID]) 
@@ -1646,8 +1833,8 @@ int MPI_Neighbor_alltoall(sbuf_t sbuf, int scount, MPI_Datatype stype,
    rc = PMPI_Neighbor_alltoall(sbuf, scount, stype, rbuf, rcount, rtype, comm);
    WTIME(TV2);
 
-   PMPI_Type_size(stype, &bytes);
-   bytes = scount * bytes;
+   PMPI_Type_size(stype, &tsize);
+   bytes = ((long) scount) * ((long) tsize);
 
    LogEvent(NEIGHBOR_ALLTOALL_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1660,15 +1847,16 @@ int MPI_Ialltoall(sbuf_t sbuf, int scount, MPI_Datatype stype,
                   void * rbuf, int rcount, MPI_Datatype rtype,
                   MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Ialltoall(sbuf, scount, stype, rbuf, rcount, rtype, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(stype, &bytes);
-   bytes = scount * bytes;
+   PMPI_Type_size(stype, &tsize);
+   bytes = ((long) scount) * ((long) tsize);
 
    LogEvent(IALLTOALL_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1681,15 +1869,16 @@ int MPI_Ineighbor_alltoall(sbuf_t sbuf, int scount, MPI_Datatype stype,
                            void * rbuf, int rcount, MPI_Datatype rtype,
                            MPI_Comm comm, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Ineighbor_alltoall(sbuf, scount, stype, rbuf, rcount, rtype, comm, req);
    WTIME(TV2);
 
-   PMPI_Type_size(stype, &bytes);
-   bytes = scount * bytes;
+   PMPI_Type_size(stype, &tsize);
+   bytes = ((long) scount) * ((long) tsize);
 
    LogEvent(INEIGHBOR_ALLTOALL_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1703,7 +1892,8 @@ int MPI_Alltoallv(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, MPI_Datatype st
                   void * rbuf, iarray_t rcounts, iarray_t rdisp, MPI_Datatype rtype,
                   MPI_Comm comm)
 {
-   int rc, i, count, bytes, tasks;
+   int rc, i, count, tsize, tasks;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[ALLTOALLV_ID]) 
@@ -1720,11 +1910,11 @@ int MPI_Alltoallv(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, MPI_Datatype st
    WTIME(TV2);
 
    PMPI_Comm_size(comm, &tasks);
-   PMPI_Type_size(stype, &bytes);
+   PMPI_Type_size(stype, &tsize);
 
    count = 0;
    for (i=0; i<tasks; i++) count += scounts[i];
-   bytes = (count * bytes) / tasks;
+   bytes = (((long) count) * ((long) tsize)) / ((long) tasks);
 
    LogEvent(ALLTOALLV_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1738,7 +1928,8 @@ int MPI_Neighbor_alltoallv(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, MPI_Da
                            void * rbuf, iarray_t rcounts, iarray_t rdisp, MPI_Datatype rtype,
                            MPI_Comm comm)
 {
-   int rc, i, count, bytes, tasks;
+   int rc, i, count, tsize, tasks;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[NEIGHBOR_ALLTOALLV_ID]) 
@@ -1754,11 +1945,11 @@ int MPI_Neighbor_alltoallv(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, MPI_Da
    WTIME(TV2);
 
    PMPI_Comm_size(comm, &tasks);
-   PMPI_Type_size(stype, &bytes);
+   PMPI_Type_size(stype, &tsize);
 
    count = 0;
    for (i=0; i<tasks; i++) count += scounts[i];
-   bytes = (count * bytes) / tasks;
+   bytes = (((long) count) * ((long) tsize)) / ((long) tasks);
 
    LogEvent(NEIGHBOR_ALLTOALLV_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1771,7 +1962,8 @@ int MPI_Ialltoallv(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, MPI_Datatype s
                    void * rbuf, iarray_t rcounts, iarray_t rdisp, MPI_Datatype rtype,
                    MPI_Comm comm, MPI_Request * req)
 {
-   int rc, i, count, bytes, tasks;
+   int rc, i, count, tsize, tasks;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -1779,11 +1971,11 @@ int MPI_Ialltoallv(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, MPI_Datatype s
    WTIME(TV2);
 
    PMPI_Comm_size(comm, &tasks);
-   PMPI_Type_size(stype, &bytes);
+   PMPI_Type_size(stype, &tsize);
 
    count = 0;
    for (i=0; i<tasks; i++) count += scounts[i];
-   bytes = (count * bytes) / tasks;
+   bytes = (((long) count) * ((long) tsize)) / ((long) tasks);
 
    LogEvent(IALLTOALLV_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1796,7 +1988,8 @@ int MPI_Ineighbor_alltoallv(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, MPI_D
                             void * rbuf, iarray_t rcounts, iarray_t rdisp, MPI_Datatype rtype,
                             MPI_Comm comm, MPI_Request * req)
 {
-   int rc, i, count, bytes, tasks;
+   int rc, i, count, tsize, tasks;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -1804,11 +1997,11 @@ int MPI_Ineighbor_alltoallv(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, MPI_D
    WTIME(TV2);
 
    PMPI_Comm_size(comm, &tasks);
-   PMPI_Type_size(stype, &bytes);
+   PMPI_Type_size(stype, &tsize);
 
    count = 0;
    for (i=0; i<tasks; i++) count += scounts[i];
-   bytes = (count * bytes) / tasks;
+   bytes = (((long) count) * ((long) tsize)) / ((long) tasks);
 
    LogEvent(INEIGHBOR_ALLTOALLV_ID, TV1, TV2, -1, -1, bytes, comm); 
    return rc;
@@ -1822,7 +2015,8 @@ int MPI_Alltoallw(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, datarray_t styp
                   void * rbuf, iarray_t rcounts, iarray_t rdisp, datarray_t rtype,
                   MPI_Comm comm)
 {
-   int rc, i, count, bytes, sz, tasks;
+   int rc, i, sz, tasks;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[ALLTOALLW_ID]) 
@@ -1840,14 +2034,14 @@ int MPI_Alltoallw(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, datarray_t styp
 
    PMPI_Comm_size(comm, &tasks);
 
-   bytes = 0;
+   bytes = 0L;
    for (i=0; i<tasks; i++)
    {
       PMPI_Type_size(stype[i], &sz);
-      bytes += scounts[i]*sz;
+      bytes += ((long) scounts[i])*((long) sz);
    }
 
-   bytes = (int) ( ((double) bytes) / ((double) tasks) );
+   bytes = (long) ( ((double) bytes) / ((double) tasks) );
 
    LogEvent(ALLTOALLW_ID, TV1, TV2, -1, -1, bytes, comm);
    return rc;
@@ -1861,7 +2055,8 @@ int MPI_Neighbor_alltoallw(sbuf_t sbuf, iarray_t scounts, const MPI_Aint * sdisp
                            void * rbuf, iarray_t rcounts, const MPI_Aint * rdisp, datarray_t rtype,
                            MPI_Comm comm)
 {
-   int rc, i, count, bytes, sz, tasks;
+   int rc, i, sz, tasks;
+   long bytes;
    struct timeval TV1, TV2;
 
    if (barrier_flag[NEIGHBOR_ALLTOALLW_ID]) 
@@ -1878,14 +2073,14 @@ int MPI_Neighbor_alltoallw(sbuf_t sbuf, iarray_t scounts, const MPI_Aint * sdisp
 
    PMPI_Comm_size(comm, &tasks);
 
-   bytes = 0;
+   bytes = 0L;
    for (i=0; i<tasks; i++)
    {
       PMPI_Type_size(stype[i], &sz);
-      bytes += scounts[i]*sz;
+      bytes += ((long) scounts[i])*((long) sz);
    }
 
-   bytes = (int) ( ((double) bytes) / ((double) tasks) );
+   bytes = (long) ( ((double) bytes) / ((double) tasks) );
 
    LogEvent(NEIGHBOR_ALLTOALLW_ID, TV1, TV2, -1, -1, bytes, comm);
    return rc;
@@ -1898,7 +2093,8 @@ int MPI_Ialltoallw(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, datarray_t sty
                    void * rbuf, iarray_t rcounts, iarray_t rdisp, datarray_t rtype,
                    MPI_Comm comm, MPI_Request * req)
 {
-   int rc, i, count, bytes, sz, tasks;
+   int rc, i, sz, tasks;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -1907,14 +2103,14 @@ int MPI_Ialltoallw(sbuf_t sbuf, iarray_t scounts, iarray_t sdisp, datarray_t sty
 
    PMPI_Comm_size(comm, &tasks);
 
-   bytes = 0;
+   bytes = 0L;
    for (i=0; i<tasks; i++)
    {
       PMPI_Type_size(stype[i], &sz);
-      bytes += scounts[i]*sz;
+      bytes += ((long) scounts[i])*((long) sz);
    }
 
-   bytes = (int) ( ((double) bytes) / ((double) tasks) );
+   bytes = (long) ( ((double) bytes) / ((double) tasks) );
 
    LogEvent(IALLTOALLW_ID, TV1, TV2, -1, -1, bytes, comm);
    return rc;
@@ -1927,7 +2123,8 @@ int MPI_Ineighbor_alltoallw(sbuf_t sbuf, iarray_t scounts, const MPI_Aint * sdis
                             void * rbuf, iarray_t rcounts, const MPI_Aint * rdisp, datarray_t rtype,
                             MPI_Comm comm, MPI_Request * req)
 {
-   int rc, i, count, bytes, sz, tasks;
+   int rc, i, sz, tasks;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -1936,14 +2133,14 @@ int MPI_Ineighbor_alltoallw(sbuf_t sbuf, iarray_t scounts, const MPI_Aint * sdis
 
    PMPI_Comm_size(comm, &tasks);
 
-   bytes = 0;
+   bytes = 0L;
    for (i=0; i<tasks; i++)
    {
       PMPI_Type_size(stype[i], &sz);
-      bytes += scounts[i]*sz;
+      bytes += ((long) scounts[i])*((long) sz);
    }
 
-   bytes = (int) ( ((double) bytes) / ((double) tasks) );
+   bytes = (long) ( ((double) bytes) / ((double) tasks) );
 
    LogEvent(INEIGHBOR_ALLTOALLW_ID, TV1, TV2, -1, -1, bytes, comm);
    return rc;
@@ -1958,7 +2155,8 @@ int MPI_Accumulate(const void * origin_addr, int origin_count, MPI_Datatype orig
                    int target_rank, MPI_Aint target_disp, int target_count, 
                    MPI_Datatype target_datatype, MPI_Op op, MPI_Win win)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -1966,8 +2164,8 @@ int MPI_Accumulate(const void * origin_addr, int origin_count, MPI_Datatype orig
                         target_disp, target_count, target_datatype, op, win);
    WTIME(TV2);
 
-   PMPI_Type_size(origin_datatype, &bytes);
-   bytes = origin_count*bytes;
+   PMPI_Type_size(origin_datatype, &tsize);
+   bytes = ((long) origin_count)*((long) tsize);
 
    LogEvent(ACCUMULATE_ID, TV1, TV2, -1, target_rank, bytes, MPI_COMM_NULL);
    return rc;
@@ -1986,7 +2184,7 @@ int MPI_Fetch_and_op(const void * origin_addr, void * result_addr, MPI_Datatype 
    rc = PMPI_Fetch_and_op(origin_addr, result_addr, datatype, target_rank, target_disp, op, win);
    WTIME(TV2);
 
-   LogEvent(FETCH_AND_OP_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(FETCH_AND_OP_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -1997,7 +2195,8 @@ int MPI_Get(void * origin_addr, int origin_count, MPI_Datatype origin_datatype,
             int target_rank, MPI_Aint target_disp, int target_count, 
             MPI_Datatype target_datatype, MPI_Win win)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
  
    WTIME(TV1);
@@ -2005,8 +2204,8 @@ int MPI_Get(void * origin_addr, int origin_count, MPI_Datatype origin_datatype,
                  target_disp, target_count, target_datatype, win);
    WTIME(TV2);
 
-   PMPI_Type_size(origin_datatype, &bytes);
-   bytes = origin_count*bytes;
+   PMPI_Type_size(origin_datatype, &tsize);
+   bytes = ((long) origin_count)*((long) tsize);
 
    LogEvent(GET_ID, TV1, TV2, -1, target_rank, bytes, MPI_COMM_NULL);
    return rc;
@@ -2020,7 +2219,8 @@ int MPI_Get_accumulate(const void *origin_addr, int origin_count,
         MPI_Datatype result_datatype, int target_rank, MPI_Aint target_disp,
         int target_count, MPI_Datatype target_datatype, MPI_Op op, MPI_Win win)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -2028,8 +2228,8 @@ int MPI_Get_accumulate(const void *origin_addr, int origin_count,
                             result_datatype, target_rank, target_disp, target_count, target_datatype, op, win);
    WTIME(TV2);
 
-   PMPI_Type_size(origin_datatype, &bytes);
-   bytes = origin_count*bytes;
+   PMPI_Type_size(origin_datatype, &tsize);
+   bytes = ((long) origin_count)*((long) tsize);
 
    LogEvent(GET_ACCUMULATE_ID, TV1, TV2, -1, target_rank, bytes, MPI_COMM_NULL);
    return rc;
@@ -2042,7 +2242,8 @@ int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype origin_datat
             int target_rank, MPI_Aint target_disp, int target_count, 
             MPI_Datatype target_datatype, MPI_Win win)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -2050,8 +2251,8 @@ int MPI_Put(const void *origin_addr, int origin_count, MPI_Datatype origin_datat
                  target_count, target_datatype, win);
    WTIME(TV2);
 
-   PMPI_Type_size(origin_datatype, &bytes);
-   bytes = origin_count*bytes;
+   PMPI_Type_size(origin_datatype, &tsize);
+   bytes = ((long) origin_count)*((long) tsize);
 
    LogEvent(PUT_ID, TV1, TV2, -1, target_rank, bytes, MPI_COMM_NULL);
    return rc;
@@ -2064,7 +2265,8 @@ int MPI_Raccumulate(const void *origin_addr, int origin_count, MPI_Datatype orig
                     int target_rank, MPI_Aint target_disp, int target_count, 
                     MPI_Datatype target_datatype, MPI_Op op, MPI_Win win, MPI_Request *request)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -2072,8 +2274,8 @@ int MPI_Raccumulate(const void *origin_addr, int origin_count, MPI_Datatype orig
                          target_count, target_datatype, op, win, request);
    WTIME(TV2);
 
-   PMPI_Type_size(origin_datatype, &bytes);
-   bytes = origin_count*bytes;
+   PMPI_Type_size(origin_datatype, &tsize);
+   bytes = ((long) origin_count)*((long) tsize);
 
    LogEvent(RACCUMULATE_ID, TV1, TV2, -1, target_rank, bytes, MPI_COMM_NULL);
    return rc;
@@ -2086,7 +2288,8 @@ int MPI_Rget(void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
              int target_rank, MPI_Aint target_disp, int target_count, 
              MPI_Datatype target_datatype, MPI_Win win, MPI_Request *request)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -2094,8 +2297,8 @@ int MPI_Rget(void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
                   target_count, target_datatype, win, request);
    WTIME(TV2);
 
-   PMPI_Type_size(origin_datatype, &bytes);
-   bytes = origin_count*bytes;
+   PMPI_Type_size(origin_datatype, &tsize);
+   bytes = ((long) origin_count)*((long) tsize);
 
    LogEvent(RGET_ID, TV1, TV2, -1, target_rank, bytes, MPI_COMM_NULL);
    return rc;
@@ -2110,7 +2313,8 @@ int MPI_Rget_accumulate(const void *origin_addr, int origin_count,
         int target_count, MPI_Datatype target_datatype, MPI_Op op, MPI_Win win,
         MPI_Request *request)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -2119,8 +2323,8 @@ int MPI_Rget_accumulate(const void *origin_addr, int origin_count,
                              target_count, target_datatype, op, win, request);
    WTIME(TV2);
 
-   PMPI_Type_size(origin_datatype, &bytes);
-   bytes = origin_count*bytes;
+   PMPI_Type_size(origin_datatype, &tsize);
+   bytes = ((long) origin_count)*((long) tsize);
 
    LogEvent(RGET_ACCUMULATE_ID, TV1, TV2, -1, target_rank, bytes, MPI_COMM_NULL);
    return rc;
@@ -2133,7 +2337,8 @@ int MPI_Rput(const void *origin_addr, int origin_count, MPI_Datatype origin_data
              int target_rank, MPI_Aint target_disp, int target_count, 
              MPI_Datatype target_datatype, MPI_Win win, MPI_Request *request)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
@@ -2141,8 +2346,8 @@ int MPI_Rput(const void *origin_addr, int origin_count, MPI_Datatype origin_data
                   target_count, target_datatype, win, request);
    WTIME(TV2);
 
-   PMPI_Type_size(origin_datatype, &bytes);
-   bytes = origin_count*bytes;
+   PMPI_Type_size(origin_datatype, &tsize);
+   bytes = ((long) origin_count)*((long) tsize);
 
    LogEvent(RPUT_ID, TV1, TV2, -1, target_rank, bytes, MPI_COMM_NULL);
    return rc;
@@ -2154,14 +2359,15 @@ int MPI_Rput(const void *origin_addr, int origin_count, MPI_Datatype origin_data
 int MPI_Win_allocate(MPI_Aint size, int disp_unit, MPI_Info info, 
                      MPI_Comm comm, void *baseptr, MPI_Win *win)
 {
-   int rc, bytes;
+   int rc;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Win_allocate(size, disp_unit, info, comm, baseptr, win);
    WTIME(TV2);
 
-   bytes = size;
+   bytes = (long) size;
 
    LogEvent(WIN_ALLOCATE_ID, TV1, TV2, -1, -1, bytes, comm);
    return rc;
@@ -2173,14 +2379,15 @@ int MPI_Win_allocate(MPI_Aint size, int disp_unit, MPI_Info info,
 int MPI_Win_allocate_shared(MPI_Aint size, int disp_unit, MPI_Info info, 
                             MPI_Comm comm, void *baseptr, MPI_Win *win)
 {
-   int rc, bytes;
+   int rc;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Win_allocate_shared(size, disp_unit, info, comm, baseptr, win);
    WTIME(TV2);
 
-   bytes = size;
+   bytes = (long) size;
 
    LogEvent(WIN_ALLOCATE_SHARED_ID, TV1, TV2, -1, -1, bytes, comm);
    return rc;
@@ -2191,14 +2398,15 @@ int MPI_Win_allocate_shared(MPI_Aint size, int disp_unit, MPI_Info info,
 /*----------------------------------------------------------*/
 int MPI_Win_attach(MPI_Win win, void *base, MPI_Aint size)
 {
-   int rc, bytes;
+   int rc;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Win_attach(win, base, size);
    WTIME(TV2);
 
-   bytes = size;
+   bytes = (long) size;
 
    LogEvent(WIN_ATTACH_ID, TV1, TV2, -1, -1, bytes, MPI_COMM_NULL);
    return rc;
@@ -2209,14 +2417,14 @@ int MPI_Win_attach(MPI_Win win, void *base, MPI_Aint size)
 /*----------------------------------------------------------*/
 int MPI_Win_complete(MPI_Win win)
 {
-   int rc, bytes;
+   int rc;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_Win_complete(win);
    WTIME(TV2);
 
-   LogEvent(WIN_COMPLETE_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_COMPLETE_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2226,14 +2434,15 @@ int MPI_Win_complete(MPI_Win win)
 int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info, 
                    MPI_Comm comm, MPI_Win *win)
 {
-   int rc, bytes;
+   int rc;
+   long bytes;
    struct timeval TV1, TV2;
  
    WTIME(TV1);
    rc = PMPI_Win_create(base, size, disp_unit, info, comm, win);
    WTIME(TV2);
  
-   bytes = size;
+   bytes = (long) size;
 
    LogEvent(WIN_CREATE_ID, TV1, TV2, -1, -1, bytes, comm);
    return rc;
@@ -2244,14 +2453,14 @@ int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info,
 /*----------------------------------------------------------*/
 int MPI_Win_create_dynamic(MPI_Info info, MPI_Comm comm, MPI_Win *win)
 {
-   int rc, bytes;
+   int rc;
    struct timeval TV1, TV2;
  
    WTIME(TV1);
    rc = PMPI_Win_create_dynamic(info, comm, win);
    WTIME(TV2);
  
-   LogEvent(WIN_CREATE_DYNAMIC_ID, TV1, TV2, -1, -1, -1, comm);
+   LogEvent(WIN_CREATE_DYNAMIC_ID, TV1, TV2, -1, -1, -1L, comm);
    return rc;
 }
 
@@ -2260,14 +2469,14 @@ int MPI_Win_create_dynamic(MPI_Info info, MPI_Comm comm, MPI_Win *win)
 /*----------------------------------------------------------*/
 int MPI_Win_detach(MPI_Win win, const void *base)
 {
-   int rc, bytes;
+   int rc;
    struct timeval TV1, TV2;
  
    WTIME(TV1);
    rc = PMPI_Win_detach(win, base);
    WTIME(TV2);
  
-   LogEvent(WIN_DETACH_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_DETACH_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2283,7 +2492,7 @@ int MPI_Win_fence(int assert, MPI_Win win)
    rc = PMPI_Win_fence(assert, win);
    WTIME(TV2);
 
-   LogEvent(WIN_FENCE_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_FENCE_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2299,7 +2508,7 @@ int MPI_Win_flush(int rank, MPI_Win win)
    rc = PMPI_Win_flush(rank, win);
    WTIME(TV2);
 
-   LogEvent(WIN_FLUSH_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_FLUSH_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2315,7 +2524,7 @@ int MPI_Win_flush_all(MPI_Win win)
    rc = PMPI_Win_flush_all(win);
    WTIME(TV2);
 
-   LogEvent(WIN_FLUSH_ALL_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_FLUSH_ALL_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2331,7 +2540,7 @@ int MPI_Win_flush_local(int rank, MPI_Win win)
    rc = PMPI_Win_flush_local(rank, win);
    WTIME(TV2);
 
-   LogEvent(WIN_FLUSH_LOCAL_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_FLUSH_LOCAL_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2347,7 +2556,7 @@ int MPI_Win_flush_local_all(MPI_Win win)
    rc = PMPI_Win_flush_local_all(win);
    WTIME(TV2);
 
-   LogEvent(WIN_FLUSH_LOCAL_ALL_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_FLUSH_LOCAL_ALL_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2363,7 +2572,7 @@ int MPI_Win_free(MPI_Win *win)
    rc = PMPI_Win_free(win);
    WTIME(TV2);
 
-   LogEvent(WIN_FREE_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_FREE_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2379,7 +2588,7 @@ int MPI_Win_lock(int lock_type, int rank, int assert, MPI_Win win)
    rc = PMPI_Win_lock(lock_type, rank, assert, win);
    WTIME(TV2);
 
-   LogEvent(WIN_LOCK_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_LOCK_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2395,7 +2604,7 @@ int MPI_Win_lock_all(int assert, MPI_Win win)
    rc = PMPI_Win_lock_all(assert, win);
    WTIME(TV2);
 
-   LogEvent(WIN_LOCK_ALL_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_LOCK_ALL_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2411,7 +2620,7 @@ int MPI_Win_post(MPI_Group group, int assert, MPI_Win win)
    rc = PMPI_Win_post(group, assert, win);
    WTIME(TV2);
 
-   LogEvent(WIN_POST_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_POST_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2427,7 +2636,7 @@ int MPI_Win_start(MPI_Group group, int assert, MPI_Win win)
    rc = PMPI_Win_start(group, assert, win);
    WTIME(TV2);
 
-   LogEvent(WIN_START_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_START_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2443,7 +2652,7 @@ int MPI_Win_sync(MPI_Win win)
    rc = PMPI_Win_sync(win);
    WTIME(TV2);
 
-   LogEvent(WIN_SYNC_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_SYNC_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2459,7 +2668,7 @@ int MPI_Win_test(MPI_Win win, int *flag)
    rc = PMPI_Win_test(win, flag);
    WTIME(TV2);
 
-   LogEvent(WIN_TEST_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_TEST_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2475,7 +2684,7 @@ int MPI_Win_unlock(int rank, MPI_Win win)
    rc = PMPI_Win_unlock(rank, win);
    WTIME(TV2);
 
-   LogEvent(WIN_UNLOCK_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_UNLOCK_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2491,7 +2700,7 @@ int MPI_Win_unlock_all(MPI_Win win)
    rc = PMPI_Win_unlock_all(win);
    WTIME(TV2);
 
-   LogEvent(WIN_UNLOCK_ALL_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_UNLOCK_ALL_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2507,7 +2716,7 @@ int MPI_Win_wait(MPI_Win win)
    rc = PMPI_Win_wait(win);
    WTIME(TV2);
 
-   LogEvent(WIN_WAIT_ID, TV1, TV2, -1, -1, -1, MPI_COMM_NULL);
+   LogEvent(WIN_WAIT_ID, TV1, TV2, -1, -1, -1L, MPI_COMM_NULL);
    return rc;
 }
 #endif
@@ -2524,7 +2733,7 @@ int MPI_File_close(MPI_File * fh)
    rc = PMPI_File_close(fh);
    WTIME(TV2);
 
-   LogIOEvent(FILE_CLOSE_ID, TV1, TV2, -1L, -1, MPI_COMM_NULL);
+   LogIOEvent(FILE_CLOSE_ID, TV1, TV2, -1L, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2540,7 +2749,7 @@ int MPI_File_delete(name_t filename, MPI_Info info)
    rc = PMPI_File_delete(filename, info);
    WTIME(TV2);
 
-   LogIOEvent(FILE_DELETE_ID, TV1, TV2, -1L, -1, MPI_COMM_NULL);
+   LogIOEvent(FILE_DELETE_ID, TV1, TV2, -1L, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2550,15 +2759,16 @@ int MPI_File_delete(name_t filename, MPI_Info info)
 int MPI_File_iread(MPI_File fh, void * buf, int count, 
                    MPI_Datatype type, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_iread(fh, buf, count, type, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_IREAD_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -2570,7 +2780,8 @@ int MPI_File_iread(MPI_File fh, void * buf, int count,
 int MPI_File_iread_at(MPI_File fh, MPI_Offset offset, void * buf, int count, 
                       MPI_Datatype type, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    long loff;
    struct timeval TV1, TV2;
 
@@ -2578,8 +2789,8 @@ int MPI_File_iread_at(MPI_File fh, MPI_Offset offset, void * buf, int count,
    rc = PMPI_File_iread_at(fh, offset, buf, count, type, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    loff = (long) offset;
 
@@ -2593,15 +2804,16 @@ int MPI_File_iread_at(MPI_File fh, MPI_Offset offset, void * buf, int count,
 int MPI_File_iread_shared(MPI_File fh, void * buf, int count, 
                           MPI_Datatype type, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_iread_shared(fh, buf, count, type, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_IREAD_SHARED_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -2613,15 +2825,16 @@ int MPI_File_iread_shared(MPI_File fh, void * buf, int count,
 int MPI_File_iwrite(MPI_File fh, sbuf_t buf, int count, 
                     MPI_Datatype type, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_iwrite(fh, buf, count, type, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_IWRITE_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -2633,7 +2846,8 @@ int MPI_File_iwrite(MPI_File fh, sbuf_t buf, int count,
 int MPI_File_iwrite_at(MPI_File fh, MPI_Offset offset, sbuf_t buf, int count, 
                        MPI_Datatype type, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    long loff;
    struct timeval TV1, TV2;
 
@@ -2641,8 +2855,8 @@ int MPI_File_iwrite_at(MPI_File fh, MPI_Offset offset, sbuf_t buf, int count,
    rc = PMPI_File_iwrite_at(fh, offset, buf, count, type, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    loff = (long) offset;
 
@@ -2656,15 +2870,16 @@ int MPI_File_iwrite_at(MPI_File fh, MPI_Offset offset, sbuf_t buf, int count,
 int MPI_File_iwrite_shared(MPI_File fh, sbuf_t buf, int count, 
                            MPI_Datatype type, MPI_Request * req)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_iwrite_shared(fh, buf, count, type, req);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_IWRITE_SHARED_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -2683,23 +2898,23 @@ int MPI_File_open(MPI_Comm comm, name_t filename, int mode,
    rc = PMPI_File_open(comm, filename, mode, info, fh);
    WTIME(TV2);
 
-   LogIOEvent(FILE_OPEN_ID, TV1, TV2, -1L, -1, MPI_COMM_NULL);
+   LogIOEvent(FILE_OPEN_ID, TV1, TV2, -1L, -1L, MPI_COMM_NULL);
    return rc;
 }
 
 /*----------------------------------------------------------*/
 /*    wrapper for C: MPI_File_preallocate                   */
 /*----------------------------------------------------------*/
-int MPI_File_preallocate(MPI_File fh, MPI_Offset size_bytes)
+int MPI_File_preallocate(MPI_File fh, MPI_Offset size_tsize)
 {
    int rc;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
-   rc = PMPI_File_preallocate(fh, size_bytes);
+   rc = PMPI_File_preallocate(fh, size_tsize);
    WTIME(TV2);
 
-   LogIOEvent(FILE_PREALLOCATE_ID, TV1, TV2, -1L, -1, MPI_COMM_NULL);
+   LogIOEvent(FILE_PREALLOCATE_ID, TV1, TV2, -1L, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2709,15 +2924,16 @@ int MPI_File_preallocate(MPI_File fh, MPI_Offset size_bytes)
 int MPI_File_read(MPI_File fh, void * buf, int count, 
                   MPI_Datatype type, MPI_Status * status)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_read(fh, buf, count, type, status);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_READ_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -2729,15 +2945,16 @@ int MPI_File_read(MPI_File fh, void * buf, int count,
 int MPI_File_read_all(MPI_File fh, void * buf, int count, 
                       MPI_Datatype type, MPI_Status * status)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_read_all(fh, buf, count, type, status);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_READ_ALL_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -2749,15 +2966,16 @@ int MPI_File_read_all(MPI_File fh, void * buf, int count,
 int MPI_File_read_all_begin(MPI_File fh, void * buf, int count, 
                             MPI_Datatype type)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_read_all_begin(fh, buf, count, type);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_READ_ALL_BEGIN_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -2775,7 +2993,7 @@ int MPI_File_read_all_end(MPI_File fh, void * buf, MPI_Status * status)
    rc = PMPI_File_read_all_end(fh, buf, status);
    WTIME(TV2);
 
-   LogIOEvent(FILE_READ_ALL_END_ID, TV1, TV2, -1L, -1, MPI_COMM_NULL);
+   LogIOEvent(FILE_READ_ALL_END_ID, TV1, TV2, -1L, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2785,7 +3003,8 @@ int MPI_File_read_all_end(MPI_File fh, void * buf, MPI_Status * status)
 int MPI_File_read_at(MPI_File fh, MPI_Offset offset, void * buf, int count, 
                      MPI_Datatype type, MPI_Status * status)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    long loff;
    struct timeval TV1, TV2;
 
@@ -2793,8 +3012,8 @@ int MPI_File_read_at(MPI_File fh, MPI_Offset offset, void * buf, int count,
    rc = PMPI_File_read_at(fh, offset, buf, count, type, status);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    loff = (long) offset;
 
@@ -2808,7 +3027,8 @@ int MPI_File_read_at(MPI_File fh, MPI_Offset offset, void * buf, int count,
 int MPI_File_read_at_all(MPI_File fh, MPI_Offset offset, void * buf, int count, 
                          MPI_Datatype type, MPI_Status * status)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    long loff;
    struct timeval TV1, TV2;
 
@@ -2816,8 +3036,8 @@ int MPI_File_read_at_all(MPI_File fh, MPI_Offset offset, void * buf, int count,
    rc = PMPI_File_read_at_all(fh, offset, buf, count, type, status);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    loff = (long) offset;
 
@@ -2831,7 +3051,8 @@ int MPI_File_read_at_all(MPI_File fh, MPI_Offset offset, void * buf, int count,
 int MPI_File_read_at_all_begin(MPI_File fh, MPI_Offset offset, void * buf, 
                                int count, MPI_Datatype type)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    long loff;
    struct timeval TV1, TV2;
 
@@ -2839,8 +3060,8 @@ int MPI_File_read_at_all_begin(MPI_File fh, MPI_Offset offset, void * buf,
    rc = PMPI_File_read_at_all_begin(fh, offset, buf, count, type);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    loff = (long) offset;
 
@@ -2860,7 +3081,7 @@ int MPI_File_read_at_all_end(MPI_File fh, void * buf, MPI_Status * status)
    rc = PMPI_File_read_at_all_end(fh, buf, status);
    WTIME(TV2);
 
-   LogIOEvent(FILE_READ_AT_ALL_END_ID, TV1, TV2, -1L, -1, MPI_COMM_NULL);
+   LogIOEvent(FILE_READ_AT_ALL_END_ID, TV1, TV2, -1L, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2870,15 +3091,16 @@ int MPI_File_read_at_all_end(MPI_File fh, void * buf, MPI_Status * status)
 int MPI_File_read_ordered(MPI_File fh, void * buf, int count, 
                           MPI_Datatype type, MPI_Status * status)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_read_ordered(fh, buf, count, type, status);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_READ_ORDERED_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -2890,15 +3112,16 @@ int MPI_File_read_ordered(MPI_File fh, void * buf, int count,
 int MPI_File_read_ordered_begin(MPI_File fh, void * buf, int count, 
                                 MPI_Datatype type)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_read_ordered_begin(fh, buf, count, type);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_READ_ORDERED_BEGIN_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -2916,7 +3139,7 @@ int MPI_File_read_ordered_end(MPI_File fh, void * buf, MPI_Status * status)
    rc = PMPI_File_read_ordered_end(fh, buf, status);
    WTIME(TV2);
 
-   LogIOEvent(FILE_READ_ORDERED_END_ID, TV1, TV2, -1L, -1, MPI_COMM_NULL);
+   LogIOEvent(FILE_READ_ORDERED_END_ID, TV1, TV2, -1L, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2926,15 +3149,16 @@ int MPI_File_read_ordered_end(MPI_File fh, void * buf, MPI_Status * status)
 int MPI_File_read_shared(MPI_File fh, void * buf, int count, 
                          MPI_Datatype type, MPI_Status * status)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_read_shared(fh, buf, count, type, status);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_READ_SHARED_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -2955,7 +3179,7 @@ int MPI_File_seek(MPI_File fh, MPI_Offset offset, int whence)
 
    loff = (long) offset;
 
-   LogIOEvent(FILE_SEEK_ID, TV1, TV2, loff, -1, MPI_COMM_NULL);
+   LogIOEvent(FILE_SEEK_ID, TV1, TV2, loff, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2974,7 +3198,7 @@ int MPI_File_seek_shared(MPI_File fh, MPI_Offset offset, int whence)
 
    loff = (long) offset;
 
-   LogIOEvent(FILE_SEEK_SHARED_ID, TV1, TV2, loff, -1, MPI_COMM_NULL);
+   LogIOEvent(FILE_SEEK_SHARED_ID, TV1, TV2, loff, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -2994,7 +3218,7 @@ int MPI_File_set_view(MPI_File fh, MPI_Offset offset, MPI_Datatype etype,
 
    loff = (long) offset;
 
-   LogIOEvent(FILE_SET_VIEW_ID, TV1, TV2, loff, -1, MPI_COMM_NULL);
+   LogIOEvent(FILE_SET_VIEW_ID, TV1, TV2, loff, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -3010,7 +3234,7 @@ int MPI_File_sync(MPI_File fh)
    rc = PMPI_File_sync(fh);
    WTIME(TV2);
 
-   LogIOEvent(FILE_SYNC_ID, TV1, TV2, -1L, -1, MPI_COMM_NULL);
+   LogIOEvent(FILE_SYNC_ID, TV1, TV2, -1L, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -3020,15 +3244,16 @@ int MPI_File_sync(MPI_File fh)
 int MPI_File_write(MPI_File fh, sbuf_t buf, int count, 
                    MPI_Datatype type, MPI_Status * status)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_write(fh, buf, count, type, status);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_WRITE_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -3040,15 +3265,16 @@ int MPI_File_write(MPI_File fh, sbuf_t buf, int count,
 int MPI_File_write_all(MPI_File fh, sbuf_t buf, int count, 
                        MPI_Datatype type, MPI_Status * status)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_write_all(fh, buf, count, type, status);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_WRITE_ALL_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -3060,15 +3286,16 @@ int MPI_File_write_all(MPI_File fh, sbuf_t buf, int count,
 int MPI_File_write_all_begin(MPI_File fh, sbuf_t buf, int count, 
                              MPI_Datatype type)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_write_all_begin(fh, buf, count, type);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_WRITE_ALL_BEGIN_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -3086,7 +3313,7 @@ int MPI_File_write_all_end(MPI_File fh, sbuf_t buf, MPI_Status * status)
    rc = PMPI_File_write_all_end(fh, buf, status);
    WTIME(TV2);
 
-   LogIOEvent(FILE_WRITE_ALL_END_ID, TV1, TV2, -1L, -1, MPI_COMM_NULL);
+   LogIOEvent(FILE_WRITE_ALL_END_ID, TV1, TV2, -1L, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -3096,7 +3323,8 @@ int MPI_File_write_all_end(MPI_File fh, sbuf_t buf, MPI_Status * status)
 int MPI_File_write_at(MPI_File fh, MPI_Offset offset, sbuf_t buf, int count, 
                       MPI_Datatype type, MPI_Status * status)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    long loff;
    struct timeval TV1, TV2;
 
@@ -3104,8 +3332,8 @@ int MPI_File_write_at(MPI_File fh, MPI_Offset offset, sbuf_t buf, int count,
    rc = PMPI_File_write_at(fh, offset, buf, count, type, status);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    loff = (long) offset;
 
@@ -3119,7 +3347,8 @@ int MPI_File_write_at(MPI_File fh, MPI_Offset offset, sbuf_t buf, int count,
 int MPI_File_write_at_all(MPI_File fh, MPI_Offset offset, sbuf_t buf, int count, 
                           MPI_Datatype type, MPI_Status * status)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    long loff;
    struct timeval TV1, TV2;
 
@@ -3127,8 +3356,8 @@ int MPI_File_write_at_all(MPI_File fh, MPI_Offset offset, sbuf_t buf, int count,
    rc = PMPI_File_write_at_all(fh, offset, buf, count, type, status);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    loff = (long) offset;
 
@@ -3142,7 +3371,8 @@ int MPI_File_write_at_all(MPI_File fh, MPI_Offset offset, sbuf_t buf, int count,
 int MPI_File_write_at_all_begin(MPI_File fh, MPI_Offset offset, sbuf_t buf, 
                                 int count, MPI_Datatype type)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    long loff;
    struct timeval TV1, TV2;
 
@@ -3150,8 +3380,8 @@ int MPI_File_write_at_all_begin(MPI_File fh, MPI_Offset offset, sbuf_t buf,
    rc = PMPI_File_write_at_all_begin(fh, offset, buf, count, type);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    loff = (long) offset;
 
@@ -3171,7 +3401,7 @@ int MPI_File_write_at_all_end(MPI_File fh, sbuf_t buf, MPI_Status * status)
    rc = PMPI_File_write_at_all_end(fh, buf, status);
    WTIME(TV2);
 
-   LogIOEvent(FILE_WRITE_AT_ALL_END_ID, TV1, TV2, -1L, -1, MPI_COMM_NULL);
+   LogIOEvent(FILE_WRITE_AT_ALL_END_ID, TV1, TV2, -1L, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -3181,15 +3411,16 @@ int MPI_File_write_at_all_end(MPI_File fh, sbuf_t buf, MPI_Status * status)
 int MPI_File_write_ordered(MPI_File fh, sbuf_t buf, int count, 
                            MPI_Datatype type, MPI_Status * status)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_write_ordered(fh, buf, count, type, status);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_WRITE_ORDERED_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -3201,15 +3432,16 @@ int MPI_File_write_ordered(MPI_File fh, sbuf_t buf, int count,
 int MPI_File_write_ordered_begin(MPI_File fh, sbuf_t buf, int count, 
                                  MPI_Datatype type)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_write_ordered_begin(fh, buf, count, type);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_WRITE_ORDERED_BEGIN_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;
@@ -3227,7 +3459,7 @@ int MPI_File_write_ordered_end(MPI_File fh, sbuf_t buf, MPI_Status * status)
    rc = PMPI_File_write_ordered_end(fh, buf, status);
    WTIME(TV2);
 
-   LogIOEvent(FILE_WRITE_ORDERED_END_ID, TV1, TV2, -1L, -1, MPI_COMM_NULL);
+   LogIOEvent(FILE_WRITE_ORDERED_END_ID, TV1, TV2, -1L, -1L, MPI_COMM_NULL);
    return rc;
 }
 
@@ -3237,15 +3469,16 @@ int MPI_File_write_ordered_end(MPI_File fh, sbuf_t buf, MPI_Status * status)
 int MPI_File_write_shared(MPI_File fh, sbuf_t buf, int count, 
                           MPI_Datatype type, MPI_Status * status)
 {
-   int rc, bytes;
+   int rc, tsize;
+   long bytes;
    struct timeval TV1, TV2;
 
    WTIME(TV1);
    rc = PMPI_File_write_shared(fh, buf, count, type, status);
    WTIME(TV2);
 
-   PMPI_Type_size(type, &bytes);
-   bytes = count * bytes;
+   PMPI_Type_size(type, &tsize);
+   bytes = ((long) count) * ((long) tsize);
 
    LogIOEvent(FILE_WRITE_SHARED_ID, TV1, TV2, -1L, bytes, MPI_COMM_NULL);
    return rc;

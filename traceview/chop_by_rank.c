@@ -14,18 +14,19 @@ typedef union { long offset; struct intPair ranks; } unType;
 struct eventstruct {
                      double tbeg;
                      double tend;
+                     long bytes;
                      int taskid;
                      int eventid;
                      unType UN;  
-                     int bytes;
                      int parent;
                      int grandparent;
                      int ioflag;
+                     int pad; 
                    };
 
 struct eventstruct event;
 
-#define EVENT_SIZE 48
+#define EVENT_SIZE 56
 
 int main(int argc, char * argv[])
 {

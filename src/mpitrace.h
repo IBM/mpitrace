@@ -26,8 +26,8 @@
 /*----------------------------------------------------------*/
 /*    dimensions of arrays                                  */
 /*----------------------------------------------------------*/
-#define MAX_BINS 31
-#define MAX_IDS 146
+#define MAX_BINS 34
+#define MAX_IDS 238
 
 #define SORT_ASCENDING_ORDER   1
 #define SORT_DESCENDING_ORDER -1
@@ -44,13 +44,14 @@ typedef union { long offset; struct intPair ranks; } unType;
 struct eventstruct {
                      double tbeg;
                      double tend;
+                     long bytes;
                      int taskid;
                      int eventid;
                      unType UN;
-                     int bytes;
                      int parent;
                      int grandparent;
                      int ioflag;
+                     int pad;
                    };
 
 struct eventstruct * event;
@@ -90,11 +91,7 @@ static double system_time, system_time_initial;
 static long context_switches, context_switches_initial;
 static double max_memory;
 static int event_number = 0;
-#if __BYTE_ORDER__ ==  __ORDER_LITTLE_ENDIAN__
 static int swap_bytes = 0;  /* default value for swap_bytes */
-#else
-static int swap_bytes = 1;  /* default value for swap_bytes */
-#endif
 static int maxlen;
 static int collect_summary = 1;
 static int first_summary_start = 1;
@@ -171,15 +168,12 @@ static double ** profile_function_time;
 /*----------------------------------------------------------*/
 /*    function prototypes                                   */
 /*----------------------------------------------------------*/
-static void LogEvent(int, struct timeval, struct timeval, int, int, int, MPI_Comm);
-static void LogIOEvent(int, struct timeval, struct timeval, long, int, MPI_Comm);
+static void LogEvent(int, struct timeval, struct timeval, int, int, long, MPI_Comm);
+static void LogIOEvent(int, struct timeval, struct timeval, long, long, MPI_Comm);
 static void get_parents(int, int *, int *);
 static void get_stack(int, unsigned int *, long *);
 static inline unsigned int fletcher32(const uint16_t *, int);
 static void write_tracefile(FILE *, struct eventstruct *, int);
-static void reverse_byte_order(char *, char *, int);
-static void swap8(char * in, char * out);
-static void swap4(char * in, char * out);
 static void write_profile_data(void);
 static void write_profile_data_myrank(void);
 static int index_from_key(unsigned int);

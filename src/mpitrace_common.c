@@ -6,9 +6,10 @@
 /*    Function to log events                                */
 /*----------------------------------------------------------*/
 void LogEvent(int id, struct timeval TV1, struct timeval TV2,
-              int src, int dest, int bytes, MPI_Comm comm)
+              int src, int dest, long bytes, MPI_Comm comm)
 {
-   unsigned int k, bin, limit, key;
+   unsigned int k, bin, key;
+   long limit;
    int size, parent, grandparent;
    double timediff;
    double tbeg, tend;
@@ -129,11 +130,11 @@ void LogEvent(int id, struct timeval TV1, struct timeval TV2,
       get_parents(traceback_level, &parent, &grandparent);
       event[event_number].tbeg          = tbeg - mpi_init_time;
       event[event_number].tend          = tend - mpi_init_time;
+      event[event_number].bytes         = bytes;
       event[event_number].UN.ranks.src  = src;
       event[event_number].UN.ranks.dest = dest;
       event[event_number].taskid        = taskid;
       event[event_number].eventid       = id;
-      event[event_number].bytes         = bytes;
       event[event_number].parent        = parent;
       event[event_number].grandparent   = grandparent;
       event[event_number].ioflag        = 0;
@@ -150,7 +151,7 @@ void LogEvent(int id, struct timeval TV1, struct timeval TV2,
 #ifdef USE_LOCKS
    pthread_mutex_lock(&lock);
 #endif
-   if (bytes == 0)
+   if (bytes == 0L)
    {
       bin = 0; 
       bin_count[id][bin] ++;
@@ -158,9 +159,9 @@ void LogEvent(int id, struct timeval TV1, struct timeval TV2,
       bin_time[id][bin] += timediff;
    }
 
-   if (bytes > 0)
+   if (bytes > 0L)
    {
-      bin = 1; limit = 4;
+      bin = 1; limit = 4L;
       while (bytes > limit) 
       {
          limit <<= 1;
@@ -173,7 +174,7 @@ void LogEvent(int id, struct timeval TV1, struct timeval TV2,
 
    event_count[id] ++;
    total_time[id ] += timediff;
-   if (bytes >= 0) total_bytes[id] += (double) bytes;
+   if (bytes >= 0L) total_bytes[id] += (double) bytes;
 
    /*----------------------------------------------*/
    /* optionally collect data by communicator size */
@@ -181,7 +182,7 @@ void LogEvent(int id, struct timeval TV1, struct timeval TV2,
    if ( comm_profile && (comm != MPI_COMM_NULL) )
    {
       PMPI_Comm_size(comm, &size);
-      bin = 0; limit = 4;
+      bin = 0; limit = 4L;
       while (size > limit) 
       {
          limit <<= 1;
@@ -228,9 +229,10 @@ void LogEvent(int id, struct timeval TV1, struct timeval TV2,
 /*    Function to log IO events                             */
 /*----------------------------------------------------------*/
 void LogIOEvent(int id, struct timeval TV1, struct timeval TV2,
-                long offset, int bytes, MPI_Comm comm)
+                long offset, long bytes, MPI_Comm comm)
 {
-   unsigned int k, bin, limit, key;
+   unsigned int k, bin, key;
+   long limit;
    int size, parent, grandparent;
    double timediff;
    double tbeg, tend;
@@ -348,10 +350,10 @@ void LogIOEvent(int id, struct timeval TV1, struct timeval TV2,
       get_parents(traceback_level, &parent, &grandparent);
       event[event_number].tbeg        = tbeg - mpi_init_time;
       event[event_number].tend        = tend - mpi_init_time;
+      event[event_number].bytes       = bytes;
       event[event_number].UN.offset   = offset;
       event[event_number].taskid      = taskid;
       event[event_number].eventid     = id;
-      event[event_number].bytes       = bytes;
       event[event_number].parent      = parent;
       event[event_number].grandparent = grandparent;
       event[event_number].ioflag      = 1;
@@ -368,7 +370,7 @@ void LogIOEvent(int id, struct timeval TV1, struct timeval TV2,
 #ifdef USE_LOCKS
    pthread_mutex_lock(&lock);
 #endif
-   if (bytes == 0)
+   if (bytes == 0L)
    {
       bin = 0; 
       bin_count[id][bin] ++;
@@ -376,9 +378,9 @@ void LogIOEvent(int id, struct timeval TV1, struct timeval TV2,
       bin_time[id][bin] += timediff;
    }
 
-   if (bytes > 0)
+   if (bytes > 0L)
    {
-      bin = 1; limit = 4;
+      bin = 1; limit = 4L;
       while (bytes > limit) 
       {
          limit <<= 1;
@@ -391,7 +393,7 @@ void LogIOEvent(int id, struct timeval TV1, struct timeval TV2,
 
    event_count[id] ++;
    total_time[id ] += timediff;
-   if (bytes >= 0) total_bytes[id] += (double) bytes;
+   if (bytes >= 0L) total_bytes[id] += (double) bytes;
 
    /*----------------------------------------------*/
    /* optionally collect data by communicator size */
@@ -399,7 +401,7 @@ void LogIOEvent(int id, struct timeval TV1, struct timeval TV2,
    if ( comm_profile && (comm != MPI_COMM_NULL) )
    {
       PMPI_Comm_size(comm, &size);
-      bin = 0; limit = 4;
+      bin = 0; limit = 4L;
       while (size > limit) 
       {
          limit <<= 1;
@@ -511,44 +513,14 @@ void mpitrace_traceback(int *rank)
 
 
 /*===========================================================*/
-/* routine to write a trace file with optional byte-swap     */
+/* routine to write a trace file                             */
 /*===========================================================*/
 static void write_tracefile(FILE * fd, struct eventstruct * ev, int nbytes)
 {
-   int rc, chunk, nchunks, leftover;
-   int chunksize;
-   char swapped[32768]; // must be adequate for 400 records
-   char * buffer;
+   int rc;
 
-
-   if (swap_bytes)
-   {
-     chunksize = 400*sizeof(struct eventstruct);
-     nchunks = nbytes/chunksize;
-     leftover = nbytes - nchunks*chunksize;
-
-     buffer = (char *) ev;
-     for (chunk=0; chunk<nchunks; chunk++)
-     {
-        reverse_byte_order(buffer, swapped, chunksize);
-        rc = fwrite(swapped, 1, chunksize, fd);
-        if (rc != chunksize) perror("write_tracefile");
-        buffer += chunksize;
-     }
-
-     if (leftover != 0)
-     {
-        reverse_byte_order(buffer, swapped, leftover);
-        rc = fwrite(swapped, 1, leftover, fd);
-        if (rc != leftover) perror("write_tracefile");
-     }
-   }
-
-   else
-   {
-     rc = fwrite(ev, 1, nbytes, fd);
-     if (rc != nbytes) perror("write_tracefile");
-   }
+   rc = fwrite(ev, 1, nbytes, fd);
+   if (rc != nbytes) perror("write_tracefile");
 }
 
 
@@ -799,50 +771,6 @@ static void stop_timers(void)
 
 }
 
-
-/*===========================================================*/
-/* routine to reverse the byte order in each event record    */
-/*===========================================================*/
-void reverse_byte_order(char * in, char * out, int num_bytes)
-{
-   int i;
-
-   for (i=0; i<num_bytes; i+=sizeof(struct eventstruct))
-   {
-       swap8(&in[i],    &out[i]);     /* 8-bytes for tbeg                */
-       swap8(&in[i+8],  &out[i+8]);   /* 8-bytes for tend                */
-       swap4(&in[i+16], &out[i+16]);  /* 4-bytes for taskid              */
-       swap4(&in[i+20], &out[i+20]);  /* 4-bytes for eventid             */
-       swap4(&in[i+24], &out[i+24]);  /* 4-bytes for src                 */
-       swap4(&in[i+28], &out[i+28]);  /* 4-bytes for dest                */
-       swap4(&in[i+32], &out[i+32]);  /* 4-bytes for bytes               */
-       swap4(&in[i+36], &out[i+36]);  /* 4-bytes for parent address      */
-       swap4(&in[i+40], &out[i+40]);  /* 4-bytes for grandparent address */
-       swap4(&in[i+44], &out[i+44]);  /* 4-bytes for padding             */
-   }
-}
-
-void swap8(char * in, char * out)
-{
-   out[7] = in[0];
-   out[6] = in[1];
-   out[5] = in[2];
-   out[4] = in[3];
-   out[3] = in[4];
-   out[2] = in[5];
-   out[1] = in[6];
-   out[0] = in[7];
-}
-
-void swap4(char * in, char * out)
-{
-   out[3] = in[0];
-   out[2] = in[1];
-   out[1] = in[2];
-   out[0] = in[3];
-}
-
-
 /*==============================================================*/
 /* routine to take an unsigned integer key and return its index */
 /*==============================================================*/
@@ -981,7 +909,7 @@ static void print_profile_by_call_stack(FILE * fh)
 static void write_profile_data(void)
 {
    int i, k, rc, id, bin, myrank, print_summary;
-   double total_comm, total_count, avg_bytes, avg_size, current_time;
+   double total_comm, total_count, avg_bytes, avg_size, current_time, aggregate_memory;
    unsigned int min_size, max_size;
    struct timeval TV;
    struct rusage RU;
@@ -1020,10 +948,10 @@ static void write_profile_data(void)
                        int rank;
                     };
    struct maxStruct my_mem, max_mem, my_elapsed, max_elapsed;
-   char tformat[160], heading[160];
-   char sformat[] = "%-28s %12ld    %11.1f   %12.3f\n";
-   char pformat[] = "   %-28s %12ld    %11.1f   %12.3f\n";
-   char dformat[] = "                    %12ld   %11.1f   %12.3f\n";
+   char tformat[160],  heading[160];
+   char sformat[] = "%-28s %12ld    %12.1f   %12.3f\n";
+   char pformat[] = "   %-28s %12ld    %12.1f   %12.3f\n";
+   char dformat[] = "                    %12ld   %12.1f   %12.3f\n";
 
    /*--------------------------------------------------------*/
    /* stop the timers if summary collection is still enabled */
@@ -1149,6 +1077,8 @@ static void write_profile_data(void)
    }
    else print_summary = 0;
 
+   PMPI_Allreduce(&max_memory, &aggregate_memory, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
    /*------------------------------------------------------------------------------------*/
    /* find the rank that used the most memory and the one that had the most elapsed time */
    /*------------------------------------------------------------------------------------*/
@@ -1223,9 +1153,9 @@ static void write_profile_data(void)
          fprintf(fh,"Data for MPI rank %d of %d:\n", myrank, ntasks);
       if (collect_summary) fprintf(fh,"Times from MPI_Init() to MPI_Finalize().\n");
       else                 fprintf(fh,"Times from MPI_Pcontrol(1) to MPI_Pcontrol(0).\n");
-      fprintf(fh,"-----------------------------------------------------------------------\n");
-      fprintf(fh,"MPI Routine                        #calls     avg. bytes      time(sec)\n");
-      fprintf(fh,"-----------------------------------------------------------------------\n");
+      fprintf(fh,"------------------------------------------------------------------------\n");
+      fprintf(fh,"MPI Routine                        #calls      avg. bytes      time(sec)\n");
+      fprintf(fh,"------------------------------------------------------------------------\n");
       for (id=0; id<MAX_IDS; id++)
       {
         if (event_count[id] > 0L)
@@ -1252,6 +1182,7 @@ static void write_profile_data(void)
       fprintf(fh,"user cpu time            = %.3f seconds.\n", user_time);
       fprintf(fh,"system time              = %.3f seconds.\n", system_time);
       fprintf(fh,"max resident set size    = %.3f MiB.\n", max_memory);
+      fprintf(fh,"aggregate memory         = %.3lf GiB.\n", aggregate_memory / 1024.0);
       if (mpi_io_routines_called > 0)
       {
          fprintf(fh,"\n");
@@ -1267,7 +1198,7 @@ static void write_profile_data(void)
       {
         if ( event_count[id] > 0L  &&  total_bytes[id] > 0.0 )
         {
-          fprintf(fh,"%-22s    #calls    avg. bytes      time(sec)\n", label[id]);
+          fprintf(fh,"%-22s    #calls     avg. bytes      time(sec)\n", label[id]);
           for (bin=0; bin<MAX_BINS; bin++)
           {
             if (bin_count[id][bin] > 0L)
@@ -1297,10 +1228,10 @@ static void write_profile_data(void)
                max_size = comm_size[bin];
                avg_size = total_size[bin]/total_count; 
                fprintf(fh,"\n");
-               fprintf(fh,"   -----------------------------------------------------------------------\n");
+               fprintf(fh,"   ------------------------------------------------------------------------\n");
                fprintf(fh,"   Data for communicator sizes %u to %u , avg size = %.2lf:\n",  min_size, max_size, avg_size);
-               fprintf(fh,"   -----------------------------------------------------------------------\n");
-               fprintf(fh,"   MPI Routine                        #calls      avg. bytes      time(sec)\n");
+               fprintf(fh,"   ------------------------------------------------------------------------\n");
+               fprintf(fh,"   MPI Routine                        #calls       avg. bytes      time(sec)\n");
                for (id=0; id<MAX_IDS; id++)
                {
                  if ( comm_count[id][bin] > 0L )
@@ -1355,7 +1286,7 @@ static void write_profile_data(void)
          fprintf(fh, "MPI timing summary for all ranks:\n");
          sprintf(tformat, "%%6d %%%ds %%6d %%10.2lf  %%10.2lf  %%10.2lf  %%10.2lf  %%10.2lf  %%10ld", maxlen);
          strcat(tformat, "\n");
-         sprintf(heading, "taskid %%%ds    cpu    comm(s)  elapsed(s)     user(s)   system(s)   size(MiB)    switches", maxlen); 
+         sprintf(heading, "taskid %%%ds    cpu    comm(s)  elapsed(s)     user(s)   system(s)   size(MiB)    switches", maxlen);
          strcat(heading, "\n");
          fprintf(fh, heading, "host");
          for (i=0; i<ntasks; i++)

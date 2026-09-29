@@ -31,7 +31,7 @@
 #include <unistd.h>
 #endif
 
-#define MAX_IDS 146
+#define MAX_IDS 238
 #include "mpitrace_ids.h"
 
 //======================================================================
@@ -44,16 +44,17 @@ typedef union { long offset; struct intPair ranks; } unType;
 struct eventstruct {
                      double tbeg;
                      double tend;
+                     long bytes;
                      int taskid;
                      int eventid;
                      unType UN; 
-                     int bytes;
                      int parent;
                      int grandparent;
                      int ioflag;
+                     int pad;
                    };
 
-#define EVENT_SIZE 48
+#define EVENT_SIZE 56
 
 //======================================================================
 // global variables   
@@ -97,6 +98,7 @@ int moving = 0;              // check for a moving mouse
 int ix_start;                // save mouse x coordinate
 int iy_start;                // save mouse y coordinate
 int text_color = 1;          // toggle text color for time values
+int first_click = 1;         
 
 double ymin;                 // ymin for the display window
 double ymax;                 // ymax for the display window
@@ -117,6 +119,8 @@ double recip_rand_max;       // for random numbers
 int draw_zoom_box = 0;       // flag to draw zoom box
 double zoom_x1;              // left  edge of zoom box
 double zoom_x2;              // right edge of zoom box
+double zoom_y1;              // lower edge of zoom box
+double zoom_y2;              // upper edge of zoom box
 
 struct eventstruct * event;  // the array of events
 double * evbeg;              // array of scaled event begin times
@@ -132,6 +136,7 @@ char label[MAX_IDS][80];       // event labels
 double color[MAX_IDS][3];      // event colors
 
 GLUI_RadioGroup *radio;        // radio button group
+
 
 //======================================================================
 // function prototypes
@@ -152,9 +157,6 @@ void identify_event(int, int);
 void rescale(struct eventstruct *, double *, double *, int, 
              double, double);
 void bitmap_text(double, double, char *);
-void reverse_byte_order(char *, char *);
-void swap8(char *, char *);
-void swap4(char *, char *);
 
 double urand1(void);
 
@@ -417,6 +419,15 @@ void draw(void)
        glVertex3d(zoom_x2, ymin, 0.0);
        glVertex3d(zoom_x2, ymax, 0.0);
      glEnd();
+     if (mouse_mode == MOUSE_ZOOMS)
+     {
+        glBegin(GL_LINES);
+          glVertex3d(0.0,    zoom_y1, 0.0);
+          glVertex3d(1000.0, zoom_y1, 0.0);
+          glVertex3d(0.0,    zoom_y2, 0.0);
+          glVertex3d(1000.0, zoom_y2, 0.0);
+        glEnd();
+     }    
   }
 
 
@@ -855,28 +866,32 @@ void mouse(int button, int state, int ix, int iy)
         identify_event(ix, iy);
         return;
      }
-     else if ((button==GLUT_RIGHT_BUTTON) && (state==GLUT_DOWN))
+     else if (first_click && (button==GLUT_RIGHT_BUTTON) && (state==GLUT_DOWN))
      {
         moving = 1;
         draw_zoom_box = 1;
         ix_start = ix;
         iy_start = iy;
+        first_click = 0;
         return;
      }
      else if ((button==GLUT_RIGHT_BUTTON) && (state==GLUT_UP))
      {
         moving = 0;
-        draw_zoom_box = 0;
+//      draw_zoom_box = 0;
         if (ix > ix_start)
         {
            old_xmin = xmin;
            xmin = old_xmin + ((double) ix_start)*xscale*xrange;
            xmax = old_xmin + ((double) ix)*xscale*xrange;
            xrange = xmax - xmin;
+           yrange = ymax - ymin;
            xcenter = 0.5*(xmin + xmax);
            rescale(event, evbeg, evend, num_events, xmin, xrange);
+           glutPostRedisplay();
         }
-        glutPostRedisplay();
+        draw_zoom_box = 0;
+        first_click = 1;
         return;
      }
    }
@@ -927,7 +942,7 @@ void mouse(int button, int state, int ix, int iy)
      else if ((button==GLUT_LEFT_BUTTON) && (state==GLUT_UP))
      {
         moving = 0; 
-        draw_zoom_box = 0; 
+ //     draw_zoom_box = 0; 
         if (ix > ix_start)
         {
            old_xmin = xmin;
@@ -955,6 +970,7 @@ void mouse(int button, int state, int ix, int iy)
            rescale(event, evbeg, evend, num_events, xmin, xrange);
            glutPostRedisplay();
         }
+        draw_zoom_box = 0; 
         return;
      }
    }
@@ -968,6 +984,7 @@ void mouse(int button, int state, int ix, int iy)
 void motion(int ix, int iy)
 {
    double dx;
+   double yscale = 1.0/(ypixels - 1);
 
    switch (mouse_mode)
    {
@@ -999,6 +1016,8 @@ void motion(int ix, int iy)
         {
            zoom_x1 = 1.0e3*((double) ix_start)*xscale;
            zoom_x2 = 1.0e3*((double) ix)*xscale;
+           zoom_y1 = ymin + ((double) (ypixels - iy_start))*yscale*yrange;
+           zoom_y2 = ymin + ((double) (ypixels - iy))*yscale*yrange;
            glutPostRedisplay();
         }
         break;
@@ -1049,9 +1068,9 @@ void menu(int option)
 //======================================================================
 void identify_event(int ix, int iy)
 {
-  int i, k, yband, eventid, src, dest, bytes;
+  int i, k, yband, eventid, src, dest;
   double yfrac, ypick, xpick, tbeg, tend;
-  long loff;
+  long bytes, loff;
 
   yfrac = ((double) (ypixels - iy))/((double) ypixels);
   ypick = ymin + yfrac*yrange;
@@ -1087,7 +1106,7 @@ void identify_event(int ix, int iy)
               printf("  source = %d\n", src);
         }
         if (dest  != -1) printf("  destination = %d\n", dest);
-        if (bytes != -1) printf("  bytes = %d\n", bytes);
+        if (bytes != -1) printf("  bytes = %ld\n", bytes);
         printf("  parent address = %#10.8x\n", event[i].parent);
         printf("  grandparent address = %#10.8x\n", event[i].grandparent);
         break;
@@ -1102,7 +1121,7 @@ void identify_event(int ix, int iy)
         printf("task id = %d, event = %s\n", event[i].taskid, label[eventid]);
         printf("  tbeg = %.6lf, tend = %.6lf, duration = %.3lf msec\n",
                   tbeg, tend, 1.0e3*(tend - tbeg)); 
-        if (bytes != -1)  printf("  bytes = %d\n", bytes);
+        if (bytes != -1)  printf("  bytes = %ld\n", bytes);
         if (loff  != -1L) printf("  offset = %ld\n", loff);
         printf("  parent address = %#10.8x\n", event[i].parent);
         printf("  grandparent address = %#10.8x\n", event[i].grandparent);
@@ -1120,7 +1139,6 @@ void identify_event(int ix, int iy)
 void read_tracefile(char * filename)
 {
   int i, k, rc, fd;
-  int swap_bytes;
   int eventid;
   long bytes_read, bytes_left, num_bytes;
   char * ptr;
@@ -1199,30 +1217,6 @@ void read_tracefile(char * filename)
   printf("\nfinished reading the trace file\n");
   printf("number of events = %d\n", num_events);
 
-  /*-----------------------------------------------------*/
-  /* check for endian mis-match and correct if necessary */
-  /*-----------------------------------------------------*/
-  swap_bytes = 0;
-  for (i=0; i<num_events; i++)
-  {
-      if (0xFF000000 & event[i].eventid) swap_bytes++;
-  }
-
-  if (swap_bytes)
-  {
-      printf("swapping byte order for the event records ...\n");
-
-      for (i=0; i<num_events; i++)
-      {
-          ptr = (char *) &event[i].tbeg;
-
-          for (k=0; k<EVENT_SIZE; k++) in[k] = *ptr++;
-          
-          ptr = (char *) &event[i].tbeg;
-
-          reverse_byte_order(in, ptr);
-      }
-  }
 
   for(i=0; i<MAX_IDS; i++) event_is_present[i] = 0;
 
@@ -1378,6 +1372,7 @@ void set_labels_and_colors(void)
    strcpy(label[RSEND_ID],                    "MPI_Rsend");
    strcpy(label[BSEND_ID],                    "MPI_Bsend");
    strcpy(label[ISEND_ID],                    "MPI_Isend");
+   strcpy(label[ISEND_C_ID],                  "MPI_Isend_c");
    strcpy(label[ISSEND_ID],                   "MPI_Issend");
    strcpy(label[IRSEND_ID],                   "MPI_Irsend");
    strcpy(label[IBSEND_ID],                   "MPI_Ibsend");
@@ -1388,6 +1383,7 @@ void set_labels_and_colors(void)
    strcpy(label[RECV_INIT_ID],                "MPI_Recv_init");
    strcpy(label[RECV_ID],                     "MPI_Recv");
    strcpy(label[IRECV_ID],                    "MPI_Irecv");
+   strcpy(label[IRECV_C_ID],                  "MPI_Irecv_c");
    strcpy(label[SENDRECV_ID],                 "MPI_Sendrecv");
    strcpy(label[SENDRECV_REPLACE_ID],         "MPI_Sendrecv_replace");
    strcpy(label[BUFFER_ATTACH_ID],            "MPI_Buffer_attach");
@@ -1405,12 +1401,14 @@ void set_labels_and_colors(void)
    strcpy(label[START_ID],                    "MPI_Start");
    strcpy(label[STARTALL_ID],                 "MPI_Startall");
    strcpy(label[BCAST_ID],                    "MPI_Bcast");
+   strcpy(label[BCAST_C_ID],                  "MPI_Bcast_c");
    strcpy(label[IBCAST_ID],                   "MPI_Ibcast");
    strcpy(label[BARRIER_ID],                  "MPI_Barrier");
    strcpy(label[IBARRIER_ID],                 "MPI_Ibarrier");
    strcpy(label[REDUCE_ID],                   "MPI_Reduce");
    strcpy(label[IREDUCE_ID],                  "MPI_Ireduce");
    strcpy(label[ALLREDUCE_ID],                "MPI_Allreduce");
+   strcpy(label[ALLREDUCE_C_ID],              "MPI_Allreduce_c");
    strcpy(label[IALLREDUCE_ID],               "MPI_Iallreduce");
    strcpy(label[REDUCE_SCATTER_ID],           "MPI_Reduce_scatter");
    strcpy(label[IREDUCE_SCATTER_ID],          "MPI_Ireduce_scatter");
@@ -1425,6 +1423,7 @@ void set_labels_and_colors(void)
    strcpy(label[EXSCAN_ID],                   "MPI_Exscan");
    strcpy(label[IEXSCAN_ID],                  "MPI_Iexscan");
    strcpy(label[ALLGATHER_ID],                "MPI_Allgather");
+   strcpy(label[ALLGATHER_C_ID],              "MPI_Allgather_c");
    strcpy(label[NEIGHBOR_ALLGATHER_ID],       "MPI_Neighbor_allgather");
    strcpy(label[IALLGATHER_ID],               "MPI_Iallgather");
    strcpy(label[INEIGHBOR_ALLGATHER_ID],      "MPI_Ineighbor_allgather");
@@ -1463,6 +1462,7 @@ void set_labels_and_colors(void)
    strcpy(label[WIN_COMPLETE_ID],             "MPI_Win_complete");
    strcpy(label[WIN_CREATE_ID],               "MPI_Win_create");
    strcpy(label[WIN_CREATE_DYNAMIC_ID],       "MPI_Win_create_dynamic");
+   strcpy(label[WIN_DETACH_ID],               "MPI_Win_detach");
    strcpy(label[WIN_FENCE_ID],                "MPI_Win_fence");
    strcpy(label[WIN_FLUSH_ID],                "MPI_Win_flush");
    strcpy(label[WIN_FLUSH_ALL_ID],            "MPI_Win_flush_all");
@@ -1471,7 +1471,6 @@ void set_labels_and_colors(void)
    strcpy(label[WIN_FREE_ID],                 "MPI_Win_free");
    strcpy(label[WIN_LOCK_ID],                 "MPI_Win_lock");
    strcpy(label[WIN_LOCK_ALL_ID],             "MPI_Win_lock_all");
-   strcpy(label[WIN_LOCK_ID],                 "MPI_Win_lock");
    strcpy(label[WIN_POST_ID],                 "MPI_Win_post");
    strcpy(label[WIN_START_ID],                "MPI_Win_start");
    strcpy(label[WIN_SYNC_ID],                 "MPI_Win_sync");
@@ -1551,43 +1550,6 @@ void rescale(struct eventstruct * ev, double * t1, double * t2,
      t1[i] = (ev[i].tbeg - min)*inv_scale;
      t2[i] = (ev[i].tend - min)*inv_scale;
   }
-}
-
-/*===========================================================*/
-/* routine to reverse the byte order in each event record    */
-/*===========================================================*/
-void reverse_byte_order(char * in, char * out)
-{
-   swap8(&in[0],  &out[0]);     /* 8-bytes for tbeg        */
-   swap8(&in[8],  &out[8]);     /* 8-bytes for tend        */
-   swap4(&in[16], &out[16]);    /* 4-bytes for taskid      */
-   swap4(&in[20], &out[20]);    /* 4-bytes for eventid     */
-   swap4(&in[24], &out[24]);    /* 4-bytes for src         */
-   swap4(&in[28], &out[28]);    /* 4-bytes for dest        */
-   swap4(&in[32], &out[32]);    /* 4-bytes for bytes       */
-   swap4(&in[36], &out[36]);    /* 4-bytes for parent      */
-   swap4(&in[40], &out[40]);    /* 4-bytes for grandparent */
-   swap4(&in[44], &out[44]);    /* 4-bytes for abi         */
-}
-
-void swap8(char * in, char * out)
-{
-   out[7] = in[0];
-   out[6] = in[1];
-   out[5] = in[2];
-   out[4] = in[3];
-   out[3] = in[4];
-   out[2] = in[5];
-   out[1] = in[6];
-   out[0] = in[7];
-}
-
-void swap4(char * in, char * out)
-{
-   out[3] = in[0];
-   out[2] = in[1];
-   out[1] = in[2];
-   out[0] = in[3];
 }
 
 double urand1(void)
